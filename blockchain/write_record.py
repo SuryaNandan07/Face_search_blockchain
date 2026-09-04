@@ -1,79 +1,163 @@
-from web3 import Web3
+
 import os
+
+from web3 import Web3
 from dotenv import load_dotenv
 
-load_dotenv()
 
-RPC_URL = os.getenv("RPC_URL")
+# =========================================
+# BLOCKCHAIN CONNECTION
+# =========================================
 
-if not RPC_URL:
-    raise RuntimeError("RPC_URL not found in .env")
+def connect_blockchain():
 
-web3 = Web3(Web3.HTTPProvider(RPC_URL))
+    load_dotenv()
 
-if not web3.is_connected():
-    raise RuntimeError("Could not connect to blockchain")
+    rpc_url = os.getenv("RPC_URL")
 
-print("Blockchain connected!")
-print("Chain ID:", web3.eth.chain_id)
+    if not rpc_url:
+        raise RuntimeError(
+            "RPC_URL not found in .env"
+        )
 
+    web3 = Web3(
+        Web3.HTTPProvider(rpc_url)
+    )
 
-# -----------------------------------------
-# Blockchain account
-# -----------------------------------------
+    if not web3.is_connected():
+        raise RuntimeError(
+            "Could not connect to blockchain"
+        )
 
-ACCOUNT = web3.eth.accounts[0]
+    print("Blockchain connected!")
+    print(
+        "Chain ID:",
+        web3.eth.chain_id
+    )
 
-print("Using account:", ACCOUNT)
-
-
-# -----------------------------------------
-# SHA-256 fingerprint
-# -----------------------------------------
-
-fingerprint = (
-    "b17c9554f64516b74e512261abaeb7ccc0c2a3e97fb45cf01a03432d4e2483aa"
-)
-
-print("Fingerprint:", fingerprint)
+    return web3
 
 
-# -----------------------------------------
-# Create transaction
-# -----------------------------------------
+# =========================================
+# WRITE FINGERPRINT
+# =========================================
 
-transaction = {
-    "from": ACCOUNT,
-    "to": ACCOUNT,
-    "value": 0,
-    "data": web3.to_bytes(text=fingerprint),
-    "gas": 100000,
-    "gasPrice": web3.eth.gas_price,
-    "nonce": web3.eth.get_transaction_count(ACCOUNT),
-    "chainId": web3.eth.chain_id,
-}
+def write_fingerprint(fingerprint):
+
+    web3 = connect_blockchain()
+
+    # -----------------------------------------
+    # Use first Ganache account
+    # -----------------------------------------
+
+    account = web3.eth.accounts[0]
+
+    print(
+        "Using account:",
+        account
+    )
+
+    # -----------------------------------------
+    # Validate fingerprint
+    # -----------------------------------------
+
+    if not fingerprint:
+        raise ValueError(
+            "Fingerprint cannot be empty."
+        )
+
+    print(
+        "Fingerprint:",
+        fingerprint
+    )
+
+    # -----------------------------------------
+    # Build transaction
+    # -----------------------------------------
+
+    transaction = {
+        "from": account,
+        "to": account,
+        "value": 0,
+        "data": web3.to_bytes(
+            text=fingerprint
+        ),
+        "gas": 100000,
+        "gasPrice": web3.eth.gas_price,
+        "nonce": web3.eth.get_transaction_count(
+            account
+        ),
+        "chainId": web3.eth.chain_id,
+    }
+
+    # -----------------------------------------
+    # Send transaction
+    # -----------------------------------------
+
+    tx_hash = web3.eth.send_transaction(
+        transaction
+    )
+
+    print("\n================================")
+    print("BLOCKCHAIN RECORD")
+    print("================================")
+
+    print(
+        "Transaction hash:",
+        tx_hash.hex()
+    )
+
+    print(
+        "Fingerprint      :",
+        fingerprint
+    )
+
+    print("================================")
+
+    # -----------------------------------------
+    # Wait for confirmation
+    # -----------------------------------------
+
+    receipt = (
+        web3.eth.wait_for_transaction_receipt(
+            tx_hash
+        )
+    )
+
+    print("\nTransaction confirmed!")
+
+    print(
+        "Block number:",
+        receipt.blockNumber
+    )
+
+    print(
+        "Status      :",
+        receipt.status
+    )
+
+    # -----------------------------------------
+    # Return transaction hash
+    # -----------------------------------------
+
+    return tx_hash.hex()
 
 
-# -----------------------------------------
-# Send transaction
-# -----------------------------------------
+# =========================================
+# DIRECT TEST
+# =========================================
 
-tx_hash = web3.eth.send_transaction(transaction)
+if __name__ == "__main__":
 
-print("\n================================")
-print("BLOCKCHAIN RECORD")
-print("================================")
-print("Transaction hash:", tx_hash.hex())
-print("Fingerprint      :", fingerprint)
-print("================================")
+    test_fingerprint = (
+        "6691dc75735f55d506261f7c80ebc8e004bdfb7c1628ccd3152ae99f02add1c8"
+    )
 
+    tx_hash = write_fingerprint(
+        test_fingerprint
+    )
 
-# -----------------------------------------
-# Wait for confirmation
-# -----------------------------------------
-
-receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-
-print("\nTransaction confirmed!")
-print("Block number:", receipt.blockNumber)
-print("Status      :", receipt.status)
+    print("\n================================")
+    print("WRITE COMPLETE")
+    print("================================")
+    print("Transaction hash:", tx_hash)
