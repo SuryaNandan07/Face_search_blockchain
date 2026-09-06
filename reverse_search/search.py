@@ -24,7 +24,10 @@ from reverse_search.face_id.face_id import (
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(
+            encoding="utf-8",
+            errors="replace",
+        )
     except Exception:
         pass
 
@@ -35,6 +38,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 def get_platform_from_url(url):
     """Detect platform/source category from URL."""
+
     if not url:
         return "Website"
 
@@ -66,6 +70,7 @@ def get_platform_from_url(url):
 
         if domain:
             parts = domain.split(".")
+
             if len(parts) >= 2:
                 return parts[-2].capitalize()
 
@@ -83,50 +88,55 @@ def get_platform_from_url(url):
 
 def optimize_image_for_upload(image_path):
     """
-    Prepare an image for SerpApi upload.
+    Prepare image for SerpApi upload.
 
-    The original file is never modified.
+    Original image is never modified.
 
-    A temporary JPEG is created if:
-    - file > 1 MB
-    OR
-    - largest dimension > 1200 px
-
-    Returns:
-        (Path, is_temporary)
+    Creates a temporary JPEG if:
+        - file > 1 MB
+        OR
+        - largest dimension > 1200 px
     """
 
     image_path = Path(image_path)
 
-    file_size_mb = image_path.stat().st_size / (1024 * 1024)
+    file_size_mb = (
+        image_path.stat().st_size
+        / (1024 * 1024)
+    )
 
     try:
         with Image.open(image_path) as img:
+
             width, height = img.size
             max_dim = max(width, height)
 
-            if file_size_mb <= 1.0 and max_dim <= 1200:
+            if (
+                file_size_mb <= 1.0
+                and max_dim <= 1200
+            ):
                 return image_path, False
 
             temp_file = tempfile.NamedTemporaryFile(
                 delete=False,
-                suffix=".jpg"
+                suffix=".jpg",
             )
 
             temp_path = Path(temp_file.name)
             temp_file.close()
 
             img_copy = img.convert("RGB")
+
             img_copy.thumbnail(
                 (1200, 1200),
-                Image.Resampling.LANCZOS
+                Image.Resampling.LANCZOS,
             )
 
             img_copy.save(
                 temp_path,
                 format="JPEG",
                 quality=80,
-                optimize=True
+                optimize=True,
             )
 
             print(
@@ -138,6 +148,7 @@ def optimize_image_for_upload(image_path):
             return temp_path, True
 
     except Exception as e:
+
         print(
             f"Image optimization warning: {e}. "
             f"Proceeding with original file."
@@ -156,18 +167,22 @@ def calculate_file_sha256(image_path):
     sha256 = hashlib.sha256()
 
     with open(image_path, "rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+
+        for chunk in iter(
+            lambda: f.read(1024 * 1024),
+            b"",
+        ):
             sha256.update(chunk)
 
     return sha256.hexdigest()
 
 
 def create_no_match_fingerprint(image_path):
-    """
-    Deterministic fingerprint for a no-match result.
-    """
+    """Create deterministic fingerprint for no-match result."""
 
-    file_sha256 = calculate_file_sha256(image_path)
+    file_sha256 = calculate_file_sha256(
+        image_path
+    )
 
     record = f"NO_MATCH|{file_sha256}"
 
@@ -180,8 +195,12 @@ def create_no_match_fingerprint(image_path):
 # CANDIDATE HELPERS
 # =========================================================
 
-def build_candidate(item, match_type, default_title):
-    """Convert a Google Lens result into our normalized candidate format."""
+def build_candidate(
+    item,
+    match_type,
+    default_title,
+):
+    """Normalize Google Lens result."""
 
     url = (
         item.get("link")
@@ -202,13 +221,22 @@ def build_candidate(item, match_type, default_title):
     )
 
     return {
-        "title": item.get("title", default_title),
-        "source": item.get("source", get_platform_from_url(url)),
+        "title": item.get(
+            "title",
+            default_title,
+        ),
+        "source": item.get(
+            "source",
+            get_platform_from_url(url),
+        ),
         "url": url,
         "thumbnail": thumbnail,
         "image": original,
         "match_type": match_type,
-        "position": item.get("position", 999),
+        "position": item.get(
+            "position",
+            999,
+        ),
     }
 
 
@@ -216,17 +244,22 @@ def build_candidate(item, match_type, default_title):
 # CANDIDATE IMAGE DOWNLOAD
 # =========================================================
 
-def download_candidate_image(url, headers):
+def download_candidate_image(
+    url,
+    headers,
+):
     """
-    Download candidate image with a short timeout.
+    Download candidate image.
 
-    Returns PIL Image or None.
+    Returns:
+        PIL.Image or None
     """
 
     if not url:
         return None
 
     try:
+
         response = requests.get(
             url,
             timeout=(2, 4),
@@ -239,8 +272,10 @@ def download_candidate_image(url, headers):
         if not response.content:
             return None
 
-        # Avoid processing huge downloads
-        if len(response.content) > 8 * 1024 * 1024:
+        if (
+            len(response.content)
+            > 8 * 1024 * 1024
+        ):
             return None
 
         image = Image.open(
@@ -254,11 +289,15 @@ def download_candidate_image(url, headers):
 
 
 # =========================================================
-# RANKING
+# RANKING HELPERS
 # =========================================================
 
 def calculate_type_score(match_type):
-    """Give retrieval-type score."""
+    """
+    Retrieval confidence supplied by Google Lens.
+
+    Exact > Visual > Organic.
+    """
 
     if match_type == "Exact Match":
         return 100.0
@@ -269,22 +308,29 @@ def calculate_type_score(match_type):
     return 65.0
 
 
-def calculate_phash_score(original_hash, candidate_image):
+def calculate_phash_score(
+    original_hash,
+    candidate_image,
+):
     """
     Compare perceptual hashes.
 
     Returns:
-        (distance, score)
+        distance, similarity score
     """
 
-    candidate_hash = imagehash.phash(candidate_image)
+    candidate_hash = imagehash.phash(
+        candidate_image
+    )
 
-    distance = original_hash - candidate_hash
+    distance = (
+        original_hash
+        - candidate_hash
+    )
 
-    # Convert Hamming distance into a simple similarity score.
     score = max(
         0.0,
-        100.0 - (distance * 3.5)
+        100.0 - (distance * 3.5),
     )
 
     return distance, score
@@ -299,26 +345,25 @@ def search_and_rank(
     input_face_embedding=None,
 ):
     """
-    Google Lens reverse image search + candidate ranking.
+    Google Lens reverse image search + ranking.
 
-    FaceNet512 is used selectively.
+    FACE INPUT:
+        FaceNet512 is the primary identity signal.
+        pHash and Lens retrieval type are supporting signals.
+
+    NON-FACE INPUT:
+        pHash + Lens retrieval type are used.
 
     IMPORTANT:
-    We do NOT run FaceNet512 against every candidate.
-
-    First:
-        - download candidate thumbnail
-        - calculate pHash
-        - calculate retrieval score
-
-    Then:
-        - shortlist promising candidates
-        - run FaceNet512 only on shortlist
+        Exact Lens matches are never treated as ordinary
+        visual matches.
     """
 
     load_dotenv()
 
-    api_key = os.getenv("SERPAPI_KEY")
+    api_key = os.getenv(
+        "SERPAPI_KEY"
+    )
 
     if not api_key:
         raise RuntimeError(
@@ -337,23 +382,47 @@ def search_and_rank(
     print("REVERSE IMAGE SEARCH (GOOGLE LENS)")
     print("================================")
 
-    print("Input image:", image_path.name)
+    print(
+        "Input image:",
+        image_path.name,
+    )
 
-    if input_face_embedding is not None:
-        print("Face signal : Available [OK]")
+    has_face = (
+        input_face_embedding
+        is not None
+    )
+
+    if has_face:
+        print(
+            "Face signal : Available [OK]"
+        )
     else:
-        print("Face signal : None")
+        print(
+            "Face signal : None"
+        )
 
     # -----------------------------------------------------
     # INPUT IMAGE
     # -----------------------------------------------------
 
     try:
-        with Image.open(image_path) as img:
-            original_image = img.convert("RGB")
-            original_hash = imagehash.phash(original_image)
+
+        with Image.open(
+            image_path
+        ) as img:
+
+            original_image = (
+                img.convert("RGB")
+            )
+
+            original_hash = (
+                imagehash.phash(
+                    original_image
+                )
+            )
 
     except Exception as e:
+
         raise RuntimeError(
             f"Unable to read input image: {e}"
         )
@@ -362,12 +431,17 @@ def search_and_rank(
     # GOOGLE LENS
     # -----------------------------------------------------
 
-    upload_path, is_temp = optimize_image_for_upload(
-        image_path
+    upload_path, is_temp = (
+        optimize_image_for_upload(
+            image_path
+        )
     )
 
     try:
-        print("\nUploading image to Google Lens...")
+
+        print(
+            "\nUploading image to Google Lens..."
+        )
 
         client = serpapi.Client(
             api_key=api_key
@@ -377,7 +451,9 @@ def search_and_rank(
             upload_path
         )
 
-        image_id = upload.get("image_id")
+        image_id = upload.get(
+            "image_id"
+        )
 
         if not image_id:
             raise RuntimeError(
@@ -387,10 +463,12 @@ def search_and_rank(
         print(
             "Image uploaded [OK] (ID:",
             image_id,
-            ")"
+            ")",
         )
 
-        print("\nQuerying Google Lens API...")
+        print(
+            "\nQuerying Google Lens API..."
+        )
 
         results = client.search(
             {
@@ -402,11 +480,13 @@ def search_and_rank(
     except Exception as e:
 
         print(
-            f"\n⚠️ Google Lens search notice: {e}"
+            f"\nGoogle Lens search notice: {e}"
         )
 
-        fingerprint = create_no_match_fingerprint(
-            image_path
+        fingerprint = (
+            create_no_match_fingerprint(
+                image_path
+            )
         )
 
         return {
@@ -419,7 +499,10 @@ def search_and_rank(
 
     finally:
 
-        if is_temp and upload_path.exists():
+        if (
+            is_temp
+            and upload_path.exists()
+        ):
             try:
                 upload_path.unlink()
             except Exception:
@@ -431,17 +514,17 @@ def search_and_rank(
 
     exact_matches = results.get(
         "exact_matches",
-        []
+        [],
     )
 
     visual_matches = results.get(
         "visual_matches",
-        []
+        [],
     )
 
     organic_results = results.get(
         "organic_results",
-        []
+        [],
     )
 
     print("\n================================")
@@ -449,20 +532,25 @@ def search_and_rank(
     print("================================")
 
     print(
-        f"Exact matches   : {len(exact_matches)}"
+        f"Exact matches   : "
+        f"{len(exact_matches)}"
     )
 
     print(
-        f"Visual matches  : {len(visual_matches)}"
+        f"Visual matches  : "
+        f"{len(visual_matches)}"
     )
 
     print(
-        f"Organic results : {len(organic_results)}"
+        f"Organic results : "
+        f"{len(organic_results)}"
     )
 
     raw_candidates = []
 
+    # Exact results first.
     for item in exact_matches:
+
         raw_candidates.append(
             build_candidate(
                 item,
@@ -471,7 +559,9 @@ def search_and_rank(
             )
         )
 
+    # Visual results second.
     for item in visual_matches:
+
         raw_candidates.append(
             build_candidate(
                 item,
@@ -480,7 +570,9 @@ def search_and_rank(
             )
         )
 
+    # Organic results last.
     for item in organic_results:
+
         raw_candidates.append(
             build_candidate(
                 item,
@@ -504,26 +596,34 @@ def search_and_rank(
         if not url:
             continue
 
-        if url in seen_urls:
+        normalized_url = url.rstrip("/")
+
+        if normalized_url in seen_urls:
             continue
 
-        seen_urls.add(url)
+        seen_urls.add(
+            normalized_url
+        )
 
         candidate["platform"] = (
             get_platform_from_url(url)
         )
 
-        candidates.append(candidate)
+        candidates.append(
+            candidate
+        )
 
     print(
-        f"Unique candidates collected: "
-        f"{len(candidates)}"
+        "Unique candidates collected:",
+        len(candidates),
     )
 
     if not candidates:
 
-        fingerprint = create_no_match_fingerprint(
-            image_path
+        fingerprint = (
+            create_no_match_fingerprint(
+                image_path
+            )
         )
 
         return {
@@ -535,7 +635,8 @@ def search_and_rank(
         }
 
     # -----------------------------------------------------
-    # STAGE 1: FAST VISUAL FILTER
+    # STAGE 1
+    # FAST IMAGE COMPARISON
     # -----------------------------------------------------
 
     print("\n================================")
@@ -552,16 +653,34 @@ def search_and_rank(
         )
     }
 
-    # Only inspect the best Lens candidates.
-    target_candidates = candidates[:20]
+    # -----------------------------------------------------
+    # IMPORTANT CHANGE:
+    #
+    # Previously:
+    #     candidates[:20]
+    #
+    # For face searches this could discard the actual
+    # person result before FaceNet saw it.
+    #
+    # Now:
+    #     face search -> up to 40 candidates
+    #     normal search -> up to 30 candidates
+    # -----------------------------------------------------
+
+    if has_face:
+        target_candidates = candidates[:40]
+    else:
+        target_candidates = candidates[:30]
 
     preliminary = []
 
-    total = len(target_candidates)
+    total = len(
+        target_candidates
+    )
 
     for idx, match in enumerate(
         target_candidates,
-        start=1
+        start=1,
     ):
 
         print(
@@ -575,9 +694,11 @@ def search_and_rank(
         )
 
         if not image_url:
+
             print(
                 "   Skipped: no candidate image"
             )
+
             continue
 
         candidate_image = (
@@ -588,9 +709,11 @@ def search_and_rank(
         )
 
         if candidate_image is None:
+
             print(
                 "   Skipped: image unavailable"
             )
+
             continue
 
         try:
@@ -602,14 +725,13 @@ def search_and_rank(
                 )
             )
 
-            type_score = calculate_type_score(
-                match["match_type"]
+            type_score = (
+                calculate_type_score(
+                    match["match_type"]
+                )
             )
 
-            # Preliminary score.
-            #
-            # pHash is intentionally the main
-            # fast comparison signal.
+            # Fast retrieval score.
             preliminary_score = (
                 (type_score * 0.30)
                 + (phash_score * 0.70)
@@ -644,7 +766,8 @@ def search_and_rank(
     )
 
     # -----------------------------------------------------
-    # STAGE 2: FACE COMPARISON SHORTLIST
+    # STAGE 2
+    # FACE VERIFICATION
     # -----------------------------------------------------
 
     print("\n================================")
@@ -653,22 +776,77 @@ def search_and_rank(
 
     face_shortlist = []
 
-    if input_face_embedding is not None:
+    if has_face:
 
+        # -------------------------------------------------
         # IMPORTANT:
-        # Only the strongest candidates reach
-        # FaceNet512.
-        preliminary.sort(
-            key=lambda x: x["preliminary_score"],
+        #
+        # Do NOT select only the pHash winners.
+        #
+        # Exact Lens results always get included.
+        # Then additional candidates are selected by
+        # retrieval/pHash score.
+        # -------------------------------------------------
+
+        exact_items = [
+            item
+            for item in preliminary
+            if item["match"]["match_type"]
+            == "Exact Match"
+        ]
+
+        other_items = [
+            item
+            for item in preliminary
+            if item["match"]["match_type"]
+            != "Exact Match"
+        ]
+
+        other_items.sort(
+            key=lambda x:
+                x["preliminary_score"],
             reverse=True,
         )
 
-        face_shortlist = preliminary[:5]
+        # Up to 10 FaceNet candidates.
+        #
+        # Exact matches are protected from being
+        # removed by pHash.
+        face_shortlist = (
+            exact_items[:5]
+            + other_items[:10]
+        )
+
+        # Remove duplicate object references.
+        unique_shortlist = []
+
+        seen_candidate_urls = set()
+
+        for item in face_shortlist:
+
+            candidate_url = (
+                item["match"]["url"]
+            )
+
+            if candidate_url in seen_candidate_urls:
+                continue
+
+            seen_candidate_urls.add(
+                candidate_url
+            )
+
+            unique_shortlist.append(
+                item
+            )
+
+        face_shortlist = (
+            unique_shortlist[:15]
+        )
 
         print(
-            f"Running FaceNet512 on only "
-            f"{len(face_shortlist)} "
-            f"promising candidates."
+            "FaceNet512 shortlist:",
+            len(face_shortlist),
+            "candidates",
         )
 
     else:
@@ -681,8 +859,6 @@ def search_and_rank(
             "FaceNet512 comparison skipped."
         )
 
-    ranked_matches = []
-
     # -----------------------------------------------------
     # FINAL RANKING
     # -----------------------------------------------------
@@ -691,14 +867,18 @@ def search_and_rank(
     print("FINAL RANKING")
     print("================================")
 
+    ranked_matches = []
+
     for item in preliminary:
 
         match = item["match"]
 
         face_score = None
 
-        # Only run expensive face model
-        # on shortlisted candidates.
+        # -------------------------------------------------
+        # FACE COMPARISON
+        # -------------------------------------------------
+
         if item in face_shortlist:
 
             try:
@@ -714,7 +894,10 @@ def search_and_rank(
                     )
                 )
 
-                if candidate_face_embedding is not None:
+                if (
+                    candidate_face_embedding
+                    is not None
+                ):
 
                     face_score = (
                         compare_face_embeddings(
@@ -737,36 +920,100 @@ def search_and_rank(
             except Exception as e:
 
                 print(
-                    f"   Face comparison failed: "
-                    f"{e}"
+                    "   Face comparison failed:",
+                    e,
                 )
 
         # -------------------------------------------------
         # FINAL CONFIDENCE
         # -------------------------------------------------
 
-        type_score = item["type_score"]
-        phash_score = item["phash_score"]
+        type_score = (
+            item["type_score"]
+        )
 
-        if face_score is not None:
+        phash_score = (
+            item["phash_score"]
+        )
 
-            confidence = (
-                (type_score * 0.20)
-                + (phash_score * 0.40)
-                + (face_score * 0.40)
-            )
+        if has_face:
+
+            # ---------------------------------------------
+            # FACE SEARCH
+            #
+            # Face identity is the strongest signal.
+            #
+            # FaceNet     = 65%
+            # pHash       = 20%
+            # Lens type   = 15%
+            #
+            # If no face is found in the candidate,
+            # it cannot receive the full identity score.
+            # ---------------------------------------------
+
+            if face_score is not None:
+
+                confidence = (
+                    (face_score * 0.65)
+                    + (phash_score * 0.20)
+                    + (type_score * 0.15)
+                )
+
+            else:
+
+                # Candidate did not contain a usable face.
+                # Penalize it heavily instead of allowing
+                # clothing/background similarity to dominate.
+                confidence = (
+                    (phash_score * 0.25)
+                    + (type_score * 0.15)
+                )
 
         else:
+
+            # ---------------------------------------------
+            # NON-FACE SEARCH
+            #
+            # Keep visual similarity as the main signal.
+            # ---------------------------------------------
 
             confidence = (
                 (type_score * 0.30)
                 + (phash_score * 0.70)
             )
 
+        # -------------------------------------------------
+        # EXACT MATCH PROTECTION
+        # -------------------------------------------------
+
+        if (
+            match["match_type"]
+            == "Exact Match"
+        ):
+
+            if has_face and face_score is not None:
+
+                # Exact + verified face.
+                confidence = max(
+                    confidence,
+                    95.0,
+                )
+
+            elif not has_face:
+
+                # Exact Lens result for non-face input.
+                confidence = max(
+                    confidence,
+                    95.0,
+                )
+
         confidence = round(
             max(
                 0.0,
-                min(100.0, confidence)
+                min(
+                    100.0,
+                    confidence,
+                ),
             ),
             1,
         )
@@ -785,10 +1032,16 @@ def search_and_rank(
                 "visual_distance":
                     item["visual_distance"],
                 "phash_score":
-                    round(phash_score, 1),
+                    round(
+                        phash_score,
+                        1,
+                    ),
                 "face_score":
                     (
-                        round(face_score, 1)
+                        round(
+                            face_score,
+                            1,
+                        )
                         if face_score is not None
                         else None
                     ),
@@ -800,8 +1053,19 @@ def search_and_rank(
     # SORT
     # -----------------------------------------------------
 
+    # Exact matches are always placed before visual/
+    # organic results when their evidence is comparable.
+    #
+    # Confidence remains the primary numerical ranking.
+
     ranked_matches.sort(
-        key=lambda x: x["confidence"],
+        key=lambda x: (
+            x["confidence"],
+            1
+            if x["match_type"]
+            == "Exact Match"
+            else 0,
+        ),
         reverse=True,
     )
 
@@ -816,8 +1080,10 @@ def search_and_rank(
             "were available."
         )
 
-        fingerprint = create_no_match_fingerprint(
-            image_path
+        fingerprint = (
+            create_no_match_fingerprint(
+                image_path
+            )
         )
 
         return {
@@ -843,26 +1109,48 @@ def search_and_rank(
         start=1,
     ):
 
-        print(f"\nRank {rank}")
+        print(
+            f"\nRank {rank}"
+        )
+
         print(
             "Platform   :",
-            candidate["platform"]
+            candidate["platform"],
         )
+
         print(
             "Title      :",
-            candidate["title"]
+            candidate["title"],
         )
+
         print(
             "Match Type :",
-            candidate["match_type"]
+            candidate["match_type"],
         )
+
         print(
             "Confidence :",
-            f"{candidate['confidence']}%"
+            f"{candidate['confidence']}%",
         )
+
+        print(
+            "Visual Sim :",
+            f"{candidate['phash_score']}%",
+        )
+
+        print(
+            "Face Sim   :",
+            (
+                f"{candidate['face_score']}%"
+                if candidate["face_score"]
+                is not None
+                else "N/A"
+            ),
+        )
+
         print(
             "URL        :",
-            candidate["url"]
+            candidate["url"],
         )
 
     # -----------------------------------------------------
@@ -876,35 +1164,35 @@ def search_and_rank(
     print("================================")
 
     print(
-        "Platform        :",
-        best["platform"]
+        "Platform         :",
+        best["platform"],
     )
 
     print(
-        "Title           :",
-        best["title"]
+        "Title            :",
+        best["title"],
     )
 
     print(
-        "URL             :",
-        best["url"]
+        "URL              :",
+        best["url"],
     )
 
     print(
-        "Match Type      :",
-        best["match_type"]
+        "Match Type       :",
+        best["match_type"],
     )
 
     print(
         "Visual Similarity:",
-        f"{best['phash_score']}%"
+        f"{best['phash_score']}%",
     )
 
     if best["face_score"] is not None:
 
         print(
             "Face Similarity  :",
-            f"{best['face_score']}%"
+            f"{best['face_score']}%",
         )
 
     else:
@@ -915,16 +1203,17 @@ def search_and_rank(
 
     print(
         "Overall Score    :",
-        f"{best['confidence']}%"
+        f"{best['confidence']}%",
     )
 
-    print("================================")
+    print(
+        "================================"
+    )
 
     # -----------------------------------------------------
     # FINGERPRINT
     # -----------------------------------------------------
 
-    # Fingerprint the selected best-match metadata.
     record_data = (
         f"{best['platform']}|"
         f"{best['title']}|"
@@ -937,7 +1226,7 @@ def search_and_rank(
 
     print(
         "\nSHA-256 Fingerprint:",
-        fingerprint
+        fingerprint,
     )
 
     return {
@@ -965,7 +1254,7 @@ if __name__ == "__main__":
 
         print(
             "Sample image not found:",
-            sample_img
+            sample_img,
         )
 
         sys.exit(1)
@@ -976,10 +1265,10 @@ if __name__ == "__main__":
 
     print(
         "\nStatus:",
-        result["status"]
+        result["status"],
     )
 
     print(
         "Fingerprint:",
-        result["fingerprint"]
+        result["fingerprint"],
     )
