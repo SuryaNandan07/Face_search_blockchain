@@ -1,226 +1,84 @@
+from PIL import ImageCms
 import os
-import sys
+import io
 import hashlib
-import tempfile
-import urllib.parse
-from pathlib import Path
-from io import BytesIO
-
-# Ensure project root is in sys.path for direct script execution
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 import requests
-import imagehash
+import numpy as np
+
+from pathlib import Path
 from PIL import Image
-import serpapi
 from dotenv import load_dotenv
+from deepface import DeepFace
+import serpapi
 
 from reverse_search.face_id.face_id import (
     extract_face_embedding_from_pil,
     compare_face_embeddings,
 )
 
-if hasattr(sys.stdout, "reconfigure"):
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+load_dotenv()
+
+SERPAPI_KEY = os.getenv("SERPAPI_KEY")
+
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0 Safari/537.36"
+    ),
+    "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+}
 
 
-# =========================================================
-# PLATFORM DETECTION
-# =========================================================
+# ============================================================
+# HELPERS
+# ============================================================
 
-def get_platform_from_url(url):
-    """Detect platform/source category from URL."""
+def safe_text(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def normalize_url(url):
     if not url:
-        return "Website"
-
-    url_lower = url.lower()
-
-    platforms = [
-        ("instagram.com", "Instagram"),
-        ("facebook.com", "Facebook"),
-        ("x.com", "X"),
-        ("twitter.com", "X"),
-        ("reddit.com", "Reddit"),
-        ("tiktok.com", "TikTok"),
-        ("threads.com", "Threads"),
-        ("threads.net", "Threads"),
-        ("youtube.com", "YouTube"),
-        ("youtu.be", "YouTube"),
-        ("pinterest.com", "Pinterest"),
-        ("linkedin.com", "LinkedIn"),
-        ("wikipedia.org", "Wikipedia"),
-    ]
-
-    for domain, platform in platforms:
-        if domain in url_lower:
-            return platform
-
-    try:
-        domain = urllib.parse.urlparse(url).netloc.lower()
-        domain = domain.replace("www.", "")
-
-        if domain:
-            parts = domain.split(".")
-            if len(parts) >= 2:
-                return parts[-2].capitalize()
-
-            return domain.capitalize()
-
-    except Exception:
-        pass
-
-    return "Website"
+        return ""
+    return str(url).strip().split("#")[0]
 
 
-# =========================================================
-# IMAGE OPTIMIZATION
-# =========================================================
+def platform_from_url(url):
+    url = safe_text(url).lower()
 
-def optimize_image_for_upload(image_path):
+    if "reddit.com" in url:
+        return "Reddit"
+    if "instagram.com" in url:
+        return "Instagram"
+    if "facebook.com" in url:
+        return "Facebook"
+    if "x.com" in url or "twitter.com" in url:
+        return "X / Twitter"
+    if "youtube.com" in url or "youtu.be" in url:
+        return "YouTube"
+    if "tiktok.com" in url:
+        return "TikTok"
+    if "pinterest.com" in url:
+        return "Pinterest"
+    if "linkedin.com" in url:
+        return "LinkedIn"
+
+    return "Web"
+
+
+# ============================================================
+# IMAGE DOWNLOAD
+# ============================================================
+
+def download_image(url, timeout=15):
     """
-    Prepare an image for SerpApi upload.
-
-    The original file is never modified.
-
-    A temporary JPEG is created if:
-    - file > 1 MB
-    OR
-    - largest dimension > 1200 px
+    Downloads an image from a URL.
 
     Returns:
-        (Path, is_temporary)
-    """
-
-    image_path = Path(image_path)
-
-    file_size_mb = image_path.stat().st_size / (1024 * 1024)
-
-    try:
-        with Image.open(image_path) as img:
-            width, height = img.size
-            max_dim = max(width, height)
-
-            if file_size_mb <= 1.0 and max_dim <= 1200:
-                return image_path, False
-
-            temp_file = tempfile.NamedTemporaryFile(
-                delete=False,
-                suffix=".jpg"
-            )
-
-            temp_path = Path(temp_file.name)
-            temp_file.close()
-
-            img_copy = img.convert("RGB")
-            img_copy.thumbnail(
-                (1200, 1200),
-                Image.Resampling.LANCZOS
-            )
-
-            img_copy.save(
-                temp_path,
-                format="JPEG",
-                quality=80,
-                optimize=True
-            )
-
-            print(
-                f"Created temporary optimized copy: "
-                f"{temp_path.name} "
-                f"({temp_path.stat().st_size / 1024:.1f} KB)"
-            )
-
-            return temp_path, True
-
-    except Exception as e:
-        print(
-            f"Image optimization warning: {e}. "
-            f"Proceeding with original file."
-        )
-
-        return image_path, False
-
-
-# =========================================================
-# SHA-256
-# =========================================================
-
-def calculate_file_sha256(image_path):
-    """Calculate SHA-256 of the original input file."""
-
-    sha256 = hashlib.sha256()
-
-    with open(image_path, "rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            sha256.update(chunk)
-
-    return sha256.hexdigest()
-
-
-def create_no_match_fingerprint(image_path):
-    """
-    Deterministic fingerprint for a no-match result.
-    """
-
-    file_sha256 = calculate_file_sha256(image_path)
-
-    record = f"NO_MATCH|{file_sha256}"
-
-    return hashlib.sha256(
-        record.encode("utf-8")
-    ).hexdigest()
-
-
-# =========================================================
-# CANDIDATE HELPERS
-# =========================================================
-
-def build_candidate(item, match_type, default_title):
-    """Convert a Google Lens result into our normalized candidate format."""
-
-    url = (
-        item.get("link")
-        or item.get("url")
-        or ""
-    ).strip()
-
-    thumbnail = (
-        item.get("thumbnail")
-        or item.get("image")
-        or item.get("original")
-    )
-
-    original = (
-        item.get("original")
-        or item.get("image")
-        or thumbnail
-    )
-
-    return {
-        "title": item.get("title", default_title),
-        "source": item.get("source", get_platform_from_url(url)),
-        "url": url,
-        "thumbnail": thumbnail,
-        "image": original,
-        "match_type": match_type,
-        "position": item.get("position", 999),
-    }
-
-
-# =========================================================
-# CANDIDATE IMAGE DOWNLOAD
-# =========================================================
-
-def download_candidate_image(url, headers):
-    """
-    Download candidate image with a short timeout.
-
-    Returns PIL Image or None.
+        PIL.Image or None
     """
 
     if not url:
@@ -229,23 +87,37 @@ def download_candidate_image(url, headers):
     try:
         response = requests.get(
             url,
-            timeout=(2, 4),
-            headers=headers,
+            headers=HEADERS,
+            timeout=timeout,
+            allow_redirects=True,
         )
 
         if response.status_code != 200:
             return None
 
+        content_type = (
+            response.headers.get(
+                "content-type",
+                ""
+            ).lower()
+        )
+
+        # Reject obvious HTML pages.
+        if (
+            "text/html" in content_type
+            or "application/json" in content_type
+        ):
+            return None
+
         if not response.content:
             return None
 
-        # Avoid processing huge downloads
-        if len(response.content) > 8 * 1024 * 1024:
-            return None
-
         image = Image.open(
-            BytesIO(response.content)
+            io.BytesIO(response.content)
         ).convert("RGB")
+
+        if image.width < 80 or image.height < 80:
+            return None
 
         return image
 
@@ -253,733 +125,1591 @@ def download_candidate_image(url, headers):
         return None
 
 
-# =========================================================
-# RANKING
-# =========================================================
+def fetch_candidate_image(candidate):
 
-def calculate_type_score(match_type):
-    """Give retrieval-type score."""
+    sources = []
 
-    if match_type == "Exact Match":
-        return 100.0
+    for key in [
+        "image_url",
+        "thumbnail",
+        "original",
+        "image",
+        "thumbnail_url",
+    ]:
 
-    if match_type == "Visual Match":
-        return 85.0
+        value = safe_text(
+            candidate.get(key)
+        )
 
-    return 65.0
+        if value and value not in sources:
+            sources.append(value)
 
+    for source in sources:
 
-def calculate_phash_score(original_hash, candidate_image):
+        image = download_image(
+            source
+        )
+
+        if image is not None:
+
+            # Save first few downloaded images
+            # for debugging only.
+            try:
+
+                debug_dir = Path(
+                    "reverse_search/debug_candidates"
+                )
+
+                debug_dir.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+
+                existing = list(
+                    debug_dir.glob(
+                        "candidate_*.jpg"
+                    )
+                )
+
+                if len(existing) < 10:
+
+                    debug_path = (
+                        debug_dir
+                        / f"candidate_{len(existing)+1}.jpg"
+                    )
+
+                    image.save(
+                        debug_path,
+                        "JPEG",
+                    )
+
+                    print(
+                        f"    DEBUG IMAGE SAVED: "
+                        f"{debug_path}"
+                    )
+
+            except Exception as e:
+
+                print(
+                    f"    DEBUG SAVE ERROR: {e}"
+                )
+
+            return image, source
+
+    return None, ""
+
+# ============================================================
+# REAL PERCEPTUAL HASH
+# ============================================================
+
+def _dct_2d(matrix):
     """
-    Compare perceptual hashes.
-
-    Returns:
-        (distance, score)
+    Small dependency-free 2D DCT-II.
     """
 
-    candidate_hash = imagehash.phash(candidate_image)
-
-    distance = original_hash - candidate_hash
-
-    # Convert Hamming distance into a simple similarity score.
-    score = max(
-        0.0,
-        100.0 - (distance * 3.5)
+    matrix = np.asarray(
+        matrix,
+        dtype=np.float64,
     )
 
-    return distance, score
+    n = matrix.shape[0]
+
+    x = np.arange(n)
+    k = np.arange(n)
+
+    basis = np.cos(
+        np.pi
+        / n
+        * (
+            x[:, None] + 0.5
+        )
+        * k[None, :]
+    )
+
+    basis[:, 0] *= (
+        1.0 / np.sqrt(2.0)
+    )
+
+    basis *= np.sqrt(
+        2.0 / n
+    )
+
+    return (
+        basis.T
+        @ matrix
+        @ basis
+    )
 
 
-# =========================================================
-# MAIN SEARCH FUNCTION
-# =========================================================
-
-def search_and_rank(
-    image_path,
-    input_face_embedding=None,
-):
+def calculate_phash(image):
     """
-    Google Lens reverse image search + candidate ranking.
+    Standard-style perceptual hash using DCT.
 
-    FaceNet512 is used selectively.
+    Returns a 64-bit hash string.
+    """
+
+    try:
+
+        img = (
+            image
+            .convert("L")
+            .resize(
+                (32, 32),
+                Image.Resampling.LANCZOS,
+            )
+        )
+
+        pixels = np.asarray(
+            img,
+            dtype=np.float64,
+        )
+
+        dct = _dct_2d(
+            pixels
+        )
+
+        # Use the top-left 8x8 low-frequency
+        # coefficients.
+        low_freq = dct[:8, :8]
+
+        # Ignore DC coefficient when
+        # calculating threshold.
+        values = low_freq.flatten()
+
+        median = np.median(
+            values[1:]
+        )
+
+        bits = values > median
+
+        return "".join(
+            "1" if bit else "0"
+            for bit in bits
+        )
+
+    except Exception:
+        return None
+
+
+def phash_distance(hash1, hash2):
+    if not hash1 or not hash2:
+        return 999
+
+    if len(hash1) != len(hash2):
+        return 999
+
+    return sum(
+        a != b
+        for a, b in zip(
+            hash1,
+            hash2,
+        )
+    )
+
+
+def phash_similarity(distance):
+    """
+    Converts Hamming distance into a
+    conservative visual similarity score.
+
+    0 distance  -> 100%
+    32 distance -> 0%
+    """
+
+    if distance == 999:
+        return 0.0
+
+    score = (
+        100.0
+        * (
+            1.0
+            - (
+                distance
+                / 32.0
+            )
+        )
+    )
+
+    return max(
+        0.0,
+        min(
+            100.0,
+            score,
+        ),
+    )
+
+
+# ============================================================
+# CANDIDATE FACE DETECTION
+# ============================================================
+
+def extract_largest_face(image):
+    """
+    Detect and crop ONLY the candidate face.
 
     IMPORTANT:
-    We do NOT run FaceNet512 against every candidate.
-
-    First:
-        - download candidate thumbnail
-        - calculate pHash
-        - calculate retrieval score
-
-    Then:
-        - shortlist promising candidates
-        - run FaceNet512 only on shortlist
+    The original input image is NEVER cropped.
     """
 
-    load_dotenv()
-
-    api_key = os.getenv("SERPAPI_KEY")
-
-    if not api_key:
-        raise RuntimeError(
-            "SERPAPI_KEY is not set. "
-            "Please define SERPAPI_KEY in your .env file."
-        )
-
-    image_path = Path(image_path)
-
-    if not image_path.exists():
-        raise FileNotFoundError(
-            f"Image not found: {image_path}"
-        )
-
-    print("\n================================")
-    print("REVERSE IMAGE SEARCH (GOOGLE LENS)")
-    print("================================")
-
-    print("Input image:", image_path.name)
-
-    if input_face_embedding is not None:
-        print("Face signal : Available [OK]")
-    else:
-        print("Face signal : None")
-
-    # -----------------------------------------------------
-    # INPUT IMAGE
-    # -----------------------------------------------------
-
     try:
-        with Image.open(image_path) as img:
-            original_image = img.convert("RGB")
-            original_hash = imagehash.phash(original_image)
 
-    except Exception as e:
-        raise RuntimeError(
-            f"Unable to read input image: {e}"
+        image_array = np.array(
+            image.convert("RGB")
         )
 
-    # -----------------------------------------------------
-    # GOOGLE LENS
-    # -----------------------------------------------------
+        faces = DeepFace.extract_faces(
+            img_path=image_array,
+            detector_backend="opencv",
+            enforce_detection=False,
+            align=True,
+        )
 
-    upload_path, is_temp = optimize_image_for_upload(
-        image_path
+        if not faces:
+            return None, False
+
+        detected_faces = []
+
+        for item in faces:
+
+            face = item.get(
+                "face"
+            )
+
+            if face is None:
+                continue
+
+            area_info = item.get(
+                "facial_area",
+                {},
+            )
+
+            width = area_info.get(
+                "w",
+                0,
+            )
+
+            height = area_info.get(
+                "h",
+                0,
+            )
+
+            area = (
+                width * height
+            )
+
+            if area <= 0:
+
+                try:
+                    area = (
+                        face.shape[0]
+                        * face.shape[1]
+                    )
+
+                except Exception:
+                    area = 0
+
+            detected_faces.append(
+                (
+                    area,
+                    face,
+                )
+            )
+
+        if not detected_faces:
+            return None, False
+
+        detected_faces.sort(
+            key=lambda x: x[0],
+            reverse=True,
+        )
+
+        _, face = (
+            detected_faces[0]
+        )
+
+        face = np.asarray(
+            face
+        )
+
+        if face.dtype != np.uint8:
+
+            if face.max() <= 1.0:
+                face = (
+                    face
+                    * 255.0
+                )
+
+            face = np.clip(
+                face,
+                0,
+                255,
+            ).astype(
+                np.uint8
+            )
+
+        face_image = (
+            Image.fromarray(
+                face
+            ).convert("RGB")
+        )
+
+        return (
+            face_image,
+            True,
+        )
+
+    except Exception:
+        return None, False
+
+
+def get_candidate_face_embedding(image):
+
+    face_crop, detected = (
+        extract_largest_face(
+            image
+        )
     )
 
+    if not detected:
+        return None, False
+
+    if face_crop is None:
+        return None, True
+
     try:
-        print("\nUploading image to Google Lens...")
+
+        embedding = (
+            extract_face_embedding_from_pil(
+                face_crop
+            )
+        )
+
+        if embedding:
+            return (
+                embedding,
+                True,
+            )
+
+    except Exception:
+        pass
+
+    return None, True
+
+
+# ============================================================
+# IMAGE VERIFICATION
+# ============================================================
+
+def verify_exact_image(
+    visual_similarity,
+    visual_distance,
+    lens_type,
+):
+    """
+    Strict exact/near-exact verification.
+
+    Lens "exact" is accepted as exact.
+
+    A visual result is NOT automatically exact.
+    It needs an extremely small perceptual distance.
+    """
+
+    if lens_type == "exact":
+        return True
+
+    if (
+        visual_distance != 999
+        and visual_distance <= 2
+    ):
+        return True
+
+    return False
+
+
+# ============================================================
+# SHA-256
+# ============================================================
+
+def sha256_text(text):
+    return hashlib.sha256(
+        text.encode(
+            "utf-8",
+            errors="replace",
+        )
+    ).hexdigest()
+
+
+def build_fingerprint(candidate):
+
+    data = "|".join(
+        [
+            safe_text(
+                candidate.get(
+                    "platform"
+                )
+            ),
+            safe_text(
+                candidate.get(
+                    "title"
+                )
+            ),
+            safe_text(
+                candidate.get(
+                    "url"
+                )
+            ),
+            safe_text(
+                candidate.get(
+                    "match_category"
+                )
+            ),
+        ]
+    )
+
+    return sha256_text(
+        data
+    )
+
+
+def write_fingerprint(candidate):
+
+    fingerprint = (
+        build_fingerprint(
+            candidate
+        )
+    )
+
+    candidate[
+        "fingerprint"
+    ] = fingerprint
+
+    return fingerprint
+
+
+# ============================================================
+# GOOGLE LENS
+# ============================================================
+
+def search_google_lens(image_path):
+
+    print()
+    print("================================")
+    print("GOOGLE LENS REVERSE IMAGE SEARCH")
+    print("================================")
+
+    if not SERPAPI_KEY:
+        print("SERPAPI_KEY not found.")
+
+        return {
+            "exact_matches": [],
+            "visual_matches": [],
+            "organic_results": [],
+        }
+
+    try:
 
         client = serpapi.Client(
-            api_key=api_key
+            api_key=SERPAPI_KEY,
+            timeout=60,
+        )
+
+        print(
+            "Uploading original image "
+            "to SerpApi..."
         )
 
         upload = client.upload_image(
-            upload_path
+            str(image_path)
         )
 
         image_id = upload.get("image_id")
 
         if not image_id:
-            raise RuntimeError(
-                "SerpApi did not return an image_id."
-            )
+            print("Image upload failed.")
+            print(upload)
+
+            return {
+                "exact_matches": [],
+                "visual_matches": [],
+                "organic_results": [],
+            }
+
+        print("Image uploaded [OK]")
 
         print(
-            "Image uploaded [OK] (ID:",
-            image_id,
-            ")"
+            "Running Google Lens..."
         )
 
-        print("\nQuerying Google Lens API...")
+        results = client.search({
+            "engine": "google_lens",
+            "image_id": image_id,
+            "type": "all",
+        })
 
-        results = client.search(
-            {
-                "engine": "google_lens",
-                "image_id": image_id,
-            }
+        data = dict(results)
+
+        exact = data.get(
+            "exact_matches",
+            [],
+        )
+
+        visual = data.get(
+            "visual_matches",
+            [],
+        )
+
+        organic = data.get(
+            "organic_results",
+            [],
+        )
+
+        print(
+            f"Lens results: "
+            f"{len(exact)} exact, "
+            f"{len(visual)} visual, "
+            f"{len(organic)} organic"
+        )
+
+        return {
+            "exact_matches": exact,
+            "visual_matches": visual,
+            "organic_results": organic,
+        }
+
+    except Exception as e:
+
+        print(
+            f"Google Lens error: {e}"
+        )
+
+        return {
+            "exact_matches": [],
+            "visual_matches": [],
+            "organic_results": [],
+        }
+# ============================================================
+# RESULT CONVERSION
+# ============================================================
+
+def result_to_candidate(
+    item,
+    lens_type,
+    lens_rank,
+):
+
+    if not isinstance(
+        item,
+        dict,
+    ):
+        return None
+
+    url = (
+        item.get("link")
+        or item.get("url")
+        or item.get("source")
+        or ""
+    )
+
+    url = normalize_url(
+        url
+    )
+
+    if not url:
+        return None
+
+    title = (
+        item.get("title")
+        or item.get("text")
+        or item.get("name")
+        or "Untitled result"
+    )
+
+    thumbnail = (
+        item.get("thumbnail")
+        or item.get("thumbnail_url")
+        or ""
+    )
+
+    image_url = (
+        item.get("original")
+        or item.get("image_url")
+        or item.get("image")
+        or ""
+    )
+
+    return {
+
+        # Result metadata
+        "platform": platform_from_url(
+            url
+        ),
+
+        "title": safe_text(
+            title
+        ),
+
+        "url": url,
+
+        # Image sources
+        "thumbnail": safe_text(
+            thumbnail
+        ),
+
+        "image_url": safe_text(
+            image_url
+        ),
+
+        # Which Lens section
+        "lens_match_type": lens_type,
+
+        "lens_rank": lens_rank,
+
+        # Ranking data
+        "match_category": "Related Result",
+
+        "visual_distance": 999,
+
+        "visual_similarity": 0.0,
+
+        "face_similarity": 0.0,
+
+        "face_detected": False,
+
+        "image_verified": False,
+
+        "image_fetch_source": "",
+
+        "confidence": 0.0,
+
+        "fingerprint": None,
+
+        "phash": None,
+
+        # Actual downloaded image
+        # stored for GUI use.
+        "candidate_image": None,
+    }
+
+
+# ============================================================
+# DEDUPLICATION
+# ============================================================
+
+def deduplicate_candidates(
+    candidates
+):
+
+    seen = set()
+
+    output = []
+
+    for candidate in candidates:
+
+        if not candidate:
+            continue
+
+        url = normalize_url(
+            candidate.get(
+                "url"
+            )
+        )
+
+        if not url:
+            continue
+
+        key = url.lower()
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+
+        output.append(
+            candidate
+        )
+
+    return output
+
+
+# ============================================================
+# MATCH CLASSIFICATION
+# ============================================================
+
+CATEGORY_PRIORITY = {
+    "Exact Image Match": 4,
+    "Person Match": 3,
+    "Visual Match": 2,
+    "Related Result": 1,
+}
+
+
+def classify_candidate(
+    candidate,
+    input_is_face,
+):
+
+    lens_type = candidate.get(
+        "lens_match_type"
+    )
+
+    visual = float(
+        candidate.get(
+            "visual_similarity",
+            0.0,
+        )
+    )
+
+    distance = int(
+        candidate.get(
+            "visual_distance",
+            999,
+        )
+    )
+
+    face = float(
+        candidate.get(
+            "face_similarity",
+            0.0,
+        )
+    )
+
+    face_detected = bool(
+        candidate.get(
+            "face_detected",
+            False,
+        )
+    )
+
+    image_verified = bool(
+        candidate.get(
+            "image_verified",
+            False,
+        )
+    )
+
+    # ========================================================
+    # 1. EXACT IMAGE MATCH
+    # ========================================================
+
+    if image_verified and verify_exact_image(
+        visual,
+        distance,
+        lens_type,
+    ):
+
+        candidate[
+            "match_category"
+        ] = "Exact Image Match"
+
+        if lens_type == "exact":
+
+            candidate[
+                "confidence"
+            ] = 99.0
+
+        else:
+
+            candidate[
+                "confidence"
+            ] = round(
+                max(
+                    97.0,
+                    visual,
+                ),
+                2,
+            )
+
+        return candidate
+
+    # ========================================================
+    # 2. PERSON MATCH
+    # ========================================================
+
+    if (
+        image_verified
+        and input_is_face
+        and face_detected
+        and face >= 65.0
+    ):
+
+        candidate[
+            "match_category"
+        ] = "Person Match"
+
+        # Face is the main evidence.
+        # Visual is supporting evidence.
+        score = (
+            face * 0.85
+            + visual * 0.15
+        )
+
+        candidate[
+            "confidence"
+        ] = round(
+            min(
+                96.0,
+                score,
+            ),
+            2,
+        )
+
+        return candidate
+
+    # ========================================================
+    # 3. VISUAL MATCH
+    # ========================================================
+
+    if (
+        image_verified
+        and visual >= 30.0
+    ):
+
+        candidate[
+            "match_category"
+        ] = "Visual Match"
+
+        score = visual
+
+        # Lens itself selected this as
+        # a visual match, so give a small
+        # ranking bonus.
+        if lens_type == "visual":
+            score += 3.0
+
+        candidate[
+            "confidence"
+        ] = round(
+            min(
+                92.0,
+                score,
+            ),
+            2,
+        )
+
+        return candidate
+
+    # ========================================================
+    # 4. RELATED RESULT
+    # ========================================================
+
+    candidate[
+        "match_category"
+    ] = "Related Result"
+
+    if image_verified:
+
+        # We successfully downloaded the image
+        # but it wasn't sufficiently similar.
+        candidate[
+            "confidence"
+        ] = 20.0
+
+    else:
+
+        # We only know Lens returned the URL.
+        candidate[
+            "confidence"
+        ] = 10.0
+
+    return candidate
+
+
+# ============================================================
+# FINAL RANKING
+# ============================================================
+
+def rank_candidates(
+    candidates,
+    input_is_face,
+):
+
+    for candidate in candidates:
+
+        classify_candidate(
+            candidate,
+            input_is_face,
+        )
+
+    def sort_key(candidate):
+
+        category = candidate.get(
+            "match_category",
+            "Related Result",
+        )
+
+        priority = CATEGORY_PRIORITY.get(
+            category,
+            1,
+        )
+
+        confidence = float(
+            candidate.get(
+                "confidence",
+                0.0,
+            )
+        )
+
+        verified = (
+            1
+            if candidate.get(
+                "image_verified",
+                False,
+            )
+            else 0
+        )
+
+        lens_rank = int(
+            candidate.get(
+                "lens_rank",
+                999,
+            )
+        )
+
+        return (
+            priority,
+            verified,
+            confidence,
+            -lens_rank,
+        )
+
+    candidates.sort(
+        key=sort_key,
+        reverse=True,
+    )
+
+    for index, candidate in enumerate(
+        candidates,
+        start=1,
+    ):
+
+        candidate[
+            "final_rank"
+        ] = index
+
+    return candidates
+
+
+# ============================================================
+# MAIN SEARCH
+# ============================================================
+
+def search_and_rank(
+    image_path,
+    input_face_embedding=None,
+):
+
+    image_path = Path(
+        image_path
+    )
+
+    print()
+    print("================================")
+    print("VISUAL + FACE SEARCH")
+    print("================================")
+
+    # --------------------------------------------------------
+    # ORIGINAL IMAGE
+    # --------------------------------------------------------
+
+    try:
+
+        original_image = (
+            Image.open(
+                image_path
+            ).convert("RGB")
         )
 
     except Exception as e:
 
         print(
-            f"\n⚠️ Google Lens search notice: {e}"
-        )
-
-        fingerprint = create_no_match_fingerprint(
-            image_path
+            f"Unable to load input image: {e}"
         )
 
         return {
+            "candidates": [],
             "best_match": None,
-            "fingerprint": fingerprint,
-            "ranked_matches": [],
-            "status": "no_match",
-            "message": str(e),
+            "fingerprint": None,
         }
 
-    finally:
+    # IMPORTANT:
+    # Original image remains untouched.
+    original_hash = calculate_phash(
+        original_image
+    )
 
-        if is_temp and upload_path.exists():
-            try:
-                upload_path.unlink()
-            except Exception:
-                pass
+    input_is_face = (
+        input_face_embedding
+        is not None
+    )
 
-    # -----------------------------------------------------
-    # CANDIDATE DISCOVERY
-    # -----------------------------------------------------
+    print(
+        "Input mode: "
+        + (
+            "FACE + VISUAL"
+            if input_is_face
+            else "VISUAL"
+        )
+    )
 
-    exact_matches = results.get(
+    # --------------------------------------------------------
+    # GOOGLE LENS
+    # --------------------------------------------------------
+
+    lens_data = search_google_lens(
+        image_path
+    )
+
+    exact_items = lens_data.get(
         "exact_matches",
-        []
+        [],
     )
 
-    visual_matches = results.get(
+    visual_items = lens_data.get(
         "visual_matches",
-        []
+        [],
     )
 
-    organic_results = results.get(
+    organic_items = lens_data.get(
         "organic_results",
-        []
+        [],
     )
 
-    print("\n================================")
-    print("CANDIDATE DISCOVERY")
-    print("================================")
-
-    print(
-        f"Exact matches   : {len(exact_matches)}"
-    )
-
-    print(
-        f"Visual matches  : {len(visual_matches)}"
-    )
-
-    print(
-        f"Organic results : {len(organic_results)}"
-    )
-
-    raw_candidates = []
-
-    for item in exact_matches:
-        raw_candidates.append(
-            build_candidate(
-                item,
-                "Exact Match",
-                "Exact Match Result",
-            )
-        )
-
-    for item in visual_matches:
-        raw_candidates.append(
-            build_candidate(
-                item,
-                "Visual Match",
-                "Visual Match Result",
-            )
-        )
-
-    for item in organic_results:
-        raw_candidates.append(
-            build_candidate(
-                item,
-                "Organic Result",
-                "Organic Search Result",
-            )
-        )
-
-    # -----------------------------------------------------
-    # DEDUPLICATE
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # BUILD CANDIDATES
+    # --------------------------------------------------------
 
     candidates = []
 
-    seen_urls = set()
+    for rank, item in enumerate(
+        exact_items,
+        start=1,
+    ):
 
-    for candidate in raw_candidates:
-
-        url = candidate["url"]
-
-        if not url:
-            continue
-
-        if url in seen_urls:
-            continue
-
-        seen_urls.add(url)
-
-        candidate["platform"] = (
-            get_platform_from_url(url)
+        candidate = (
+            result_to_candidate(
+                item,
+                "exact",
+                rank,
+            )
         )
 
-        candidates.append(candidate)
+        if candidate:
+            candidates.append(
+                candidate
+            )
+
+    for rank, item in enumerate(
+        visual_items,
+        start=1,
+    ):
+
+        candidate = (
+            result_to_candidate(
+                item,
+                "visual",
+                rank,
+            )
+        )
+
+        if candidate:
+            candidates.append(
+                candidate
+            )
+
+    for rank, item in enumerate(
+        organic_items,
+        start=1,
+    ):
+
+        candidate = (
+            result_to_candidate(
+                item,
+                "organic",
+                rank,
+            )
+        )
+
+        if candidate:
+            candidates.append(
+                candidate
+            )
+
+    candidates = (
+        deduplicate_candidates(
+            candidates
+        )
+    )
 
     print(
         f"Unique candidates collected: "
         f"{len(candidates)}"
     )
 
-    if not candidates:
+    # --------------------------------------------------------
+    # LIMIT
+    # --------------------------------------------------------
 
-        fingerprint = create_no_match_fingerprint(
-            image_path
-        )
+    candidates = candidates[:40]
 
-        return {
-            "best_match": None,
-            "fingerprint": fingerprint,
-            "ranked_matches": [],
-            "status": "no_match",
-            "message": "No candidates returned.",
-        }
+    # --------------------------------------------------------
+    # ANALYZE
+    # --------------------------------------------------------
 
-    # -----------------------------------------------------
-    # STAGE 1: FAST VISUAL FILTER
-    # -----------------------------------------------------
-
-    print("\n================================")
-    print("STAGE 1: FAST VISUAL COMPARISON")
+    print()
+    print("================================")
+    print("ANALYZING CANDIDATE IMAGES")
     print("================================")
 
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 "
-            "(Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 "
-            "(KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        )
-    }
+    downloaded_count = 0
+    unavailable_count = 0
 
-    # Only inspect the best Lens candidates.
-    target_candidates = candidates[:20]
-
-    preliminary = []
-
-    total = len(target_candidates)
-
-    for idx, match in enumerate(
-        target_candidates,
-        start=1
+    for index, candidate in enumerate(
+        candidates,
+        start=1,
     ):
 
         print(
-            f"Comparing candidate "
-            f"{idx}/{total}..."
+            f"[{index}/{len(candidates)}] "
+            f"{candidate['platform']} - "
+            f"{candidate['title'][:70]}"
         )
 
-        image_url = (
-            match.get("thumbnail")
-            or match.get("image")
-        )
+        # ----------------------------------------------------
+        # FETCH IMAGE
+        # ----------------------------------------------------
 
-        if not image_url:
-            print(
-                "   Skipped: no candidate image"
-            )
-            continue
-
-        candidate_image = (
-            download_candidate_image(
-                image_url,
-                headers,
-            )
+        (
+            candidate_image,
+            source_url,
+        ) = fetch_candidate_image(
+            candidate
         )
 
         if candidate_image is None:
+
+            unavailable_count += 1
+
             print(
-                "   Skipped: image unavailable"
+                "    Image unavailable "
+                "(image + thumbnail failed)"
             )
+
+            # Do NOT pretend we compared it.
+            candidate[
+                "image_verified"
+            ] = False
+
             continue
 
-        try:
+        downloaded_count += 1
 
-            distance, phash_score = (
-                calculate_phash_score(
-                    original_hash,
-                    candidate_image,
-                )
-            )
+        candidate[
+            "image_verified"
+        ] = True
 
-            type_score = calculate_type_score(
-                match["match_type"]
-            )
+        candidate[
+            "image_fetch_source"
+        ] = source_url
 
-            # Preliminary score.
-            #
-            # pHash is intentionally the main
-            # fast comparison signal.
-            preliminary_score = (
-                (type_score * 0.30)
-                + (phash_score * 0.70)
-            )
-
-            preliminary.append(
-                {
-                    "match": match,
-                    "image": candidate_image,
-                    "visual_distance": distance,
-                    "phash_score": phash_score,
-                    "type_score": type_score,
-                    "preliminary_score":
-                        preliminary_score,
-                }
-            )
-
-            print(
-                f"   pHash similarity: "
-                f"{phash_score:.1f}%"
-            )
-
-        except Exception as e:
-
-            print(
-                f"   Comparison failed: {e}"
-            )
-
-    print(
-        f"\nFast comparison completed: "
-        f"{len(preliminary)}/{total} candidates"
-    )
-
-    # -----------------------------------------------------
-    # STAGE 2: FACE COMPARISON SHORTLIST
-    # -----------------------------------------------------
-
-    print("\n================================")
-    print("STAGE 2: FACE VERIFICATION")
-    print("================================")
-
-    face_shortlist = []
-
-    if input_face_embedding is not None:
-
-        # IMPORTANT:
-        # Only the strongest candidates reach
-        # FaceNet512.
-        preliminary.sort(
-            key=lambda x: x["preliminary_score"],
-            reverse=True,
-        )
-
-        face_shortlist = preliminary[:5]
+        # Store actual PIL image for GUI.
+        candidate[
+            "candidate_image"
+        ] = candidate_image
 
         print(
-            f"Running FaceNet512 on only "
-            f"{len(face_shortlist)} "
-            f"promising candidates."
+            "    Candidate image fetched [OK]"
         )
 
-    else:
+        # ----------------------------------------------------
+        # VISUAL COMPARISON
+        # ----------------------------------------------------
 
-        print(
-            "No input face detected."
+        candidate_hash = (
+            calculate_phash(
+                candidate_image
+            )
         )
 
-        print(
-            "FaceNet512 comparison skipped."
+        candidate[
+            "phash"
+        ] = candidate_hash
+
+        distance = phash_distance(
+            original_hash,
+            candidate_hash,
         )
 
-    ranked_matches = []
+        candidate[
+            "visual_distance"
+        ] = distance
 
-    # -----------------------------------------------------
-    # FINAL RANKING
-    # -----------------------------------------------------
+        visual_score = (
+            phash_similarity(
+                distance
+            )
+        )
 
-    print("\n================================")
-    print("FINAL RANKING")
-    print("================================")
+        candidate[
+            "visual_similarity"
+        ] = round(
+            visual_score,
+            2,
+        )
 
-    for item in preliminary:
+        # ----------------------------------------------------
+        # FACE COMPARISON
+        # ----------------------------------------------------
 
-        match = item["match"]
-
-        face_score = None
-
-        # Only run expensive face model
-        # on shortlisted candidates.
-        if item in face_shortlist:
+        if input_is_face:
 
             try:
 
-                print(
-                    "Face comparison:",
-                    match["title"][:60],
+                (
+                    candidate_embedding,
+                    face_detected,
+                ) = get_candidate_face_embedding(
+                    candidate_image
                 )
 
-                candidate_face_embedding = (
-                    extract_face_embedding_from_pil(
-                        item["image"]
-                    )
-                )
+                candidate[
+                    "face_detected"
+                ] = face_detected
 
-                if candidate_face_embedding is not None:
+                if (
+                    face_detected
+                    and candidate_embedding
+                ):
 
                     face_score = (
                         compare_face_embeddings(
                             input_face_embedding,
-                            candidate_face_embedding,
+                            candidate_embedding,
                         )
                     )
 
+                    candidate[
+                        "face_similarity"
+                    ] = round(
+                        face_score,
+                        2,
+                    )
+
                     print(
-                        f"   Face similarity: "
-                        f"{face_score:.1f}%"
+                        f"    Face: "
+                        f"{face_score:.1f}% | "
+                        f"Visual: "
+                        f"{visual_score:.1f}%"
                     )
 
                 else:
 
                     print(
-                        "   No face in candidate."
+                        f"    No candidate face | "
+                        f"Visual: "
+                        f"{visual_score:.1f}%"
                     )
 
             except Exception as e:
 
                 print(
-                    f"   Face comparison failed: "
+                    f"    Face analysis skipped: "
                     f"{e}"
                 )
 
-        # -------------------------------------------------
-        # FINAL CONFIDENCE
-        # -------------------------------------------------
-
-        type_score = item["type_score"]
-        phash_score = item["phash_score"]
-
-        if face_score is not None:
-
-            confidence = (
-                (type_score * 0.20)
-                + (phash_score * 0.40)
-                + (face_score * 0.40)
-            )
-
         else:
 
-            confidence = (
-                (type_score * 0.30)
-                + (phash_score * 0.70)
+            print(
+                f"    Visual: "
+                f"{visual_score:.1f}%"
             )
 
-        confidence = round(
-            max(
-                0.0,
-                min(100.0, confidence)
-            ),
-            1,
-        )
+    # --------------------------------------------------------
+    # ANALYSIS SUMMARY
+    # --------------------------------------------------------
 
-        ranked_matches.append(
-            {
-                "platform": match["platform"],
-                "source": match["source"],
-                "title": match["title"],
-                "url": match["url"],
-                "thumbnail": (
-                    match.get("thumbnail")
-                    or match.get("image")
-                ),
-                "match_type": match["match_type"],
-                "visual_distance":
-                    item["visual_distance"],
-                "phash_score":
-                    round(phash_score, 1),
-                "face_score":
-                    (
-                        round(face_score, 1)
-                        if face_score is not None
-                        else None
-                    ),
-                "confidence": confidence,
-            }
-        )
-
-    # -----------------------------------------------------
-    # SORT
-    # -----------------------------------------------------
-
-    ranked_matches.sort(
-        key=lambda x: x["confidence"],
-        reverse=True,
-    )
-
-    # -----------------------------------------------------
-    # NO MATCH
-    # -----------------------------------------------------
-
-    if not ranked_matches:
-
-        print(
-            "\n[NOTE] No usable candidate images "
-            "were available."
-        )
-
-        fingerprint = create_no_match_fingerprint(
-            image_path
-        )
-
-        return {
-            "best_match": None,
-            "fingerprint": fingerprint,
-            "ranked_matches": [],
-            "status": "no_match",
-            "message": (
-                "No usable candidate images found."
-            ),
-        }
-
-    # -----------------------------------------------------
-    # DISPLAY TOP RESULTS
-    # -----------------------------------------------------
-
-    print("\n================================")
-    print("RANKED RESULTS")
+    print()
+    print("================================")
+    print("IMAGE ANALYSIS SUMMARY")
     print("================================")
 
-    for rank, candidate in enumerate(
-        ranked_matches[:10],
-        start=1,
-    ):
+    print(
+        f"Candidates received : "
+        f"{len(candidates)}"
+    )
 
-        print(f"\nRank {rank}")
+    print(
+        f"Images fetched      : "
+        f"{downloaded_count}"
+    )
+
+    print(
+        f"Images unavailable  : "
+        f"{unavailable_count}"
+    )
+
+    # --------------------------------------------------------
+    # RANK
+    # --------------------------------------------------------
+
+    ranked = rank_candidates(
+        candidates,
+        input_is_face,
+    )
+
+    # --------------------------------------------------------
+    # FINAL RESULTS
+    # --------------------------------------------------------
+
+    print()
+    print("================================")
+    print("FINAL MATCH RANKING")
+    print("================================")
+
+    for candidate in ranked:
+
+        print()
         print(
-            "Platform   :",
-            candidate["platform"]
-        )
-        print(
-            "Title      :",
-            candidate["title"]
-        )
-        print(
-            "Match Type :",
-            candidate["match_type"]
-        )
-        print(
-            "Confidence :",
-            f"{candidate['confidence']}%"
-        )
-        print(
-            "URL        :",
-            candidate["url"]
+            f"Rank "
+            f"{candidate.get('final_rank')}"
         )
 
-    # -----------------------------------------------------
+        print(
+            f"Category   : "
+            f"{candidate.get('match_category')}"
+        )
+
+        print(
+            f"Platform   : "
+            f"{candidate.get('platform')}"
+        )
+
+        print(
+            f"Title      : "
+            f"{candidate.get('title')}"
+        )
+
+        print(
+            f"Confidence : "
+            f"{candidate.get('confidence', 0):.1f}%"
+        )
+
+        print(
+            f"Visual     : "
+            f"{candidate.get('visual_similarity', 0):.1f}%"
+        )
+
+        if input_is_face:
+
+            print(
+                f"Face       : "
+                f"{candidate.get('face_similarity', 0):.1f}%"
+            )
+
+        print(
+            f"Image      : "
+            + (
+                "Verified"
+                if candidate.get(
+                    "image_verified",
+                    False,
+                )
+                else "Unavailable"
+            )
+        )
+
+        print(
+            f"Lens rank  : "
+            f"{candidate.get('lens_rank', '-')}"
+        )
+
+        print(
+            f"URL        : "
+            f"{candidate.get('url')}"
+        )
+
+    # --------------------------------------------------------
     # BEST MATCH
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
-    best = ranked_matches[0]
+    best_match = (
+        ranked[0]
+        if ranked
+        else None
+    )
 
-    print("\n================================")
-    print("BEST CANDIDATE MATCH")
+    # Do not select an unverified
+    # candidate as the meaningful best match
+    # when a verified candidate exists.
+
+    verified_candidates = [
+        candidate
+        for candidate in ranked
+        if candidate.get(
+            "image_verified",
+            False,
+        )
+    ]
+
+    if verified_candidates:
+
+        best_match = (
+            verified_candidates[0]
+        )
+
+    fingerprint = None
+
+    if best_match:
+
+        fingerprint = (
+            write_fingerprint(
+                best_match
+            )
+        )
+
+    # --------------------------------------------------------
+    # BEST MATCH DISPLAY
+    # --------------------------------------------------------
+
+    print()
+    print("================================")
+    print("BEST MATCH")
     print("================================")
 
-    print(
-        "Platform        :",
-        best["platform"]
-    )
-
-    print(
-        "Title           :",
-        best["title"]
-    )
-
-    print(
-        "URL             :",
-        best["url"]
-    )
-
-    print(
-        "Match Type      :",
-        best["match_type"]
-    )
-
-    print(
-        "Visual Similarity:",
-        f"{best['phash_score']}%"
-    )
-
-    if best["face_score"] is not None:
+    if best_match:
 
         print(
-            "Face Similarity  :",
-            f"{best['face_score']}%"
+            f"Rank       : "
+            f"{best_match.get('final_rank')}"
+        )
+
+        print(
+            f"Category   : "
+            f"{best_match.get('match_category')}"
+        )
+
+        print(
+            f"Platform   : "
+            f"{best_match.get('platform')}"
+        )
+
+        print(
+            f"Title      : "
+            f"{best_match.get('title')}"
+        )
+
+        print(
+            f"Confidence : "
+            f"{best_match.get('confidence', 0):.1f}%"
+        )
+
+        print(
+            f"Visual     : "
+            f"{best_match.get('visual_similarity', 0):.1f}%"
+        )
+
+        if input_is_face:
+
+            print(
+                f"Face       : "
+                f"{best_match.get('face_similarity', 0):.1f}%"
+            )
+
+        print(
+            f"URL        : "
+            f"{best_match.get('url')}"
+        )
+
+        print(
+            f"Image      : "
+            + (
+                "Verified"
+                if best_match.get(
+                    "image_verified",
+                    False,
+                )
+                else "Unavailable"
+            )
+        )
+
+        if fingerprint:
+
+            print(
+                f"Fingerprint: "
+                f"{fingerprint}"
+            )
+
+    else:
+
+        print(
+            "No candidate found."
+        )
+
+    print(
+        "================================"
+    )
+
+    return {
+        "candidates": ranked,
+        "best_match": best_match,
+        "fingerprint": fingerprint,
+    }
+
+
+# ============================================================
+# DIRECT TEST
+# ============================================================
+
+if __name__ == "__main__":
+
+    PROJECT_ROOT = (
+        Path(__file__).resolve().parents[1]
+    )
+
+    test_image = (
+        PROJECT_ROOT
+        / "images.jpg"
+    )
+
+    if not test_image.exists():
+
+        print(
+            f"Test image not found: "
+            f"{test_image}"
         )
 
     else:
 
         print(
-            "Face Similarity  : N/A"
+            f"Testing image: "
+            f"{test_image}"
         )
 
-    print(
-        "Overall Score    :",
-        f"{best['confidence']}%"
-    )
+        embedding = None
 
-    print("================================")
+        try:
 
-    # -----------------------------------------------------
-    # FINGERPRINT
-    # -----------------------------------------------------
+            result = DeepFace.represent(
+                img_path=str(test_image),
+                model_name="Facenet512",
+                detector_backend="opencv",
+                enforce_detection=False,
+            )
 
-    # Fingerprint the selected best-match metadata.
-    record_data = (
-        f"{best['platform']}|"
-        f"{best['title']}|"
-        f"{best['url']}"
-    )
+            if result:
 
-    fingerprint = hashlib.sha256(
-        record_data.encode("utf-8")
-    ).hexdigest()
+                embedding = (
+                    result[0].get(
+                        "embedding"
+                    )
+                )
 
-    print(
-        "\nSHA-256 Fingerprint:",
-        fingerprint
-    )
+        except Exception as e:
 
-    return {
-        "best_match": best,
-        "fingerprint": fingerprint,
-        "ranked_matches": ranked_matches,
-        "status": "success",
-        "message": "Match found successfully.",
-    }
+            print(
+                f"Face test skipped: {e}"
+            )
 
-
-# =========================================================
-# DIRECT EXECUTION
-# =========================================================
-
-if __name__ == "__main__":
-
-    sample_img = (
-        PROJECT_ROOT
-        / "reverse_search"
-        / "images.jpg"
-    )
-
-    if not sample_img.exists():
-
-        print(
-            "Sample image not found:",
-            sample_img
+        search_and_rank(
+            test_image,
+            embedding,
         )
-
-        sys.exit(1)
-
-    result = search_and_rank(
-        sample_img
-    )
-
-    print(
-        "\nStatus:",
-        result["status"]
-    )
-
-    print(
-        "Fingerprint:",
-        result["fingerprint"]
-    )
