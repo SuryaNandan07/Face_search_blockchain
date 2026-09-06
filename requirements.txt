@@ -1,0 +1,19 @@
+# Face Search + Blockchain System Dependencies
+
+# Reverse Image Search & Image Processing
+ImageHash==4.3.2
+pillow==12.3.0
+RapidFuzz==3.14.6
+requests==2.34.2
+serpapi==1.1.0
+
+# Face Detection & Embedding
+deepface==0.0.100
+tensorflow==2.21.0
+tf_keras==2.21.0
+
+# Blockchain Integration
+web3==8.0.0
+
+# Environment Configuration
+python-dotenv==1.2.3
