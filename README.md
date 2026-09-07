@@ -429,27 +429,6 @@ When an unsuited image (such as a landscape photo with no face detected) is proc
 
 ---
 
-## 🏆 HACKATHON / TASK INFORMATION
-
-### **HH Goa Hackathon 2026 — Shortlisting Task 3**
-**Project Title**: FACESEARCH.EXE — Face Identification & Blockchain Verification
-
-#### **Task Requirements vs Implementation Mapping**:
-
-| Hackathon Requirement | System Implementation | Status |
-| :--- | :--- | :--- |
-| **1. Take face scan / input image** | Tkinter GUI image loader supporting JPG, PNG, WEBP formats. | **COMPLETE** |
-| **2. Detect and encode face** | DeepFace framework with FaceNet512 model weights and OpenCV backend. | **COMPLETE** |
-| **3. Genuine live web reverse search** | Live Google Lens queries via SerpApi fetching real-world social/web posts. | **COMPLETE** |
-| **4. Find and rank matching content** | Multi-factor engine combining vector cosine similarity, 2D DCT pHash, and text fuzzing. | **COMPLETE** |
-| **5. Generate record fingerprint** | SHA-256 cryptographic hashing of candidate metadata (`Platform\|Title\|URL\|Category`). | **COMPLETE** |
-| **6. Store fingerprint on blockchain** | Web3 transaction payload (`tx["input"]`) broadcast to local Ganache EVM node. | **COMPLETE** |
-| **7. Read back & verify record** | Decodes `tx["input"]` from Ganache receipt and performs exact string equality check. | **COMPLETE** |
-| **8. Full demonstration** | Complete visual workstation UI displaying search, ranking, hash, tx, and audit receipt. | **COMPLETE** |
-| **9. Documentation & limitations** | Comprehensive README detailing usage, setup, EVM mechanism, and limitations. | **COMPLETE** |
-
----
-
 ## 🚦 FINAL SYSTEM STATUS
 
 ```text
