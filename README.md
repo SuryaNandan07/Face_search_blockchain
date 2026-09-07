@@ -28,9 +28,9 @@ FACESEARCH.EXE locates online image origins across social platforms using DeepFa
 
 ---
 
-## ⏱️ THE 60-SECOND JUDGE TOUR
+## ⚡ END-TO-END PIPELINE OVERVIEW
 
-For hackathon judges evaluating **HH Goa 2026 Shortlisting Task 3**, here is how the end-to-end operational pipeline works:
+The end-to-end operational pipeline processes visual intelligence and executes blockchain verification through the following stages:
 
 ```text
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
@@ -327,7 +327,7 @@ DISCOVERED METADATA ➔ SHA-256 FINGERPRINT ➔ EVM TX DATA ("input") ➔ BLOCK 
 ```text
 Face_search_blockchain/
 ├── assets/                         # Documentation screenshots & demo animations
-│   ├── demo.gif                    # Animated demonstration preview
+│   ├── demo.gif                    # Animated demonstration preview (optional)
 │   ├── kratos-search-success.png   # Kratos search & blockchain verification screenshot
 │   ├── ironman-search-success.png  # Iron Man search & blockchain verification screenshot
 │   └── nature-invalid-test.png     # Intentional non-face failure handling test screenshot
