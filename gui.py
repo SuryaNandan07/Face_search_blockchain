@@ -77,6 +77,8 @@ class RetroFaceSearchApp:
         self.is_searching = False
         self.anim_frame_idx = 0
         self.anim_timer_id = None
+        self.bc_current_state = "IDLE"
+        self.bc_current_block_num = 1
 
         # Check connection states
         self.serpapi_connected = bool(os.getenv("SERPAPI_KEY"))
@@ -440,6 +442,7 @@ class RetroFaceSearchApp:
         # Dynamic Blockchain Canvas Flow Diagram (Extended width)
         self.bc_canvas = tk.Canvas(content, bg="#040407", height=42, highlightthickness=1, highlightbackground="#222233")
         self.bc_canvas.pack(fill=tk.X, pady=(0, 6))
+        self.bc_canvas.bind("<Configure>", lambda e: self._draw_blockchain_diagram())
 
         # Data fields & checkmarks split
         fields_frame = tk.Frame(content, bg=self.C_PANEL)
@@ -465,52 +468,81 @@ class RetroFaceSearchApp:
         self.lbl_ind_match = tk.Label(fields_right, text="✓ Fingerprint match", font=("Consolas", 9, "bold"), fg=self.C_GREEN, bg=self.C_PANEL, anchor="w")
         self.lbl_ind_match.pack(anchor="w")
 
-        # Prominent Result Status Banner
-        self.bc_banner = tk.Frame(content, bg="#003311", bd=1, relief=tk.SOLID, highlightbackground=self.C_BORDER_GREEN, highlightthickness=1, pady=6)
+        # Prominent Result Status Banner (Sleek Dark Cyberpunk Theme)
+        self.bc_banner = tk.Frame(content, bg="#08080c", bd=1, relief=tk.SOLID, highlightbackground=self.C_BORDER_MUTED, highlightthickness=1, pady=6)
         self.bc_banner.pack(fill=tk.X, pady=(6, 0))
 
         self.lbl_bc_status = tk.Label(
             self.bc_banner,
-            text="✓ VERIFICATION SUCCESSFUL",
-            font=("Consolas", 11, "bold"),
-            fg="#ffffff",
-            bg="#003311",
+            text="🔒 BLOCKCHAIN SYSTEM READY",
+            font=("Consolas", 10, "bold"),
+            fg=self.C_TEXT_MUTED,
+            bg="#08080c",
         )
         self.lbl_bc_status.pack()
 
         self._draw_blockchain_diagram(state="IDLE")
 
-    def _draw_blockchain_diagram(self, state="IDLE", block_num=1):
+    def _update_bc_banner(self, text, fg=None, bg=None, border_color=None):
+        if border_color is None:
+            border_color = self.C_BORDER_GREEN
+        if bg is None:
+            bg = "#051a0d"
+        if fg is None:
+            fg = self.C_GREEN
+
+        self.bc_banner.config(bg=bg, highlightbackground=border_color)
+        self.lbl_bc_status.config(text=text, fg=fg, bg=bg)
+
+    def _draw_blockchain_diagram(self, state=None, block_num=None):
+        if state is not None:
+            self.bc_current_state = state
+        else:
+            state = getattr(self, "bc_current_state", "IDLE")
+
+        if block_num is not None:
+            self.bc_current_block_num = block_num
+        else:
+            block_num = getattr(self, "bc_current_block_num", 1)
+
         self.bc_canvas.delete("all")
         w = self.bc_canvas.winfo_width()
         if w < 100:
-            w = 600
+            w = 700
         h = 42
 
         if state == "SUCCESS":
             color = self.C_GREEN
-            nodes = [("FINGERPRINT", 70), ("[ HASH GENERATED ]", 210), (f"[ BLOCK #{block_num} ]", 370), ("✓ VERIFIED", 510), ("🔒 LOCK", 630)]
+            labels = ["FINGERPRINT", "[ HASH GENERATED ]", f"[ BLOCK #{block_num} ]", "✓ VERIFIED", "🔒 LOCK"]
         elif state == "OFFLINE":
             color = self.C_RED
-            nodes = [("FINGERPRINT", 90), ("[ LOCAL HASH ]", 270), ("✕ GANACHE OFFLINE", 480)]
+            labels = ["FINGERPRINT", "[ LOCAL HASH ]", "✕ GANACHE OFFLINE"]
         elif state == "RUNNING":
             color = self.C_ORANGE
-            nodes = [("FINGERPRINT", 70), ("[ HASH ]", 210), ("[ SUBMITTING ]", 370), ("🔒 PENDING", 530)]
+            labels = ["FINGERPRINT", "[ HASH ]", "[ SUBMITTING ]", "🔒 PENDING"]
         elif state == "FAILED":
             color = self.C_RED
-            nodes = [("FINGERPRINT", 70), ("[ HASH ]", 210), ("✕ FAILED", 350)]
+            labels = ["FINGERPRINT", "[ HASH ]", "✕ FAILED"]
         else: # IDLE
             color = self.C_TEXT_MUTED
-            nodes = [("FINGERPRINT", 70), ("[ HASH GENERATION ]", 230), ("[ BLOCKCHAIN WRITE ]", 410), ("🔒 LOCK", 570)]
+            labels = ["FINGERPRINT", "[ HASH GENERATION ]", "[ BLOCKCHAIN WRITE ]", "🔒 LOCK"]
 
-        for i in range(len(nodes) - 1):
-            x1 = nodes[i][1] + 45
-            x2 = nodes[i + 1][1] - 45
-            self.bc_canvas.create_line(x1, h // 2, x2, h // 2, fill=color, dash=(4, 2) if state == "RUNNING" else None, width=1)
+        n = len(labels)
+        node_positions = []
+        for i, label in enumerate(labels):
+            x = int(w * (i + 0.5) / n)
+            hw = max(52, len(label) * 4 + 10)
+            node_positions.append((label, x, hw))
 
-        for label, x in nodes:
-            bx1, by1 = x - 50, h // 2 - 12
-            bx2, by2 = x + 50, h // 2 + 12
+        for i in range(n - 1):
+            x1 = node_positions[i][1] + node_positions[i][2] + 3
+            x2 = node_positions[i + 1][1] - node_positions[i + 1][2] - 3
+            if x2 > x1:
+                self.bc_canvas.create_line(x1, h // 2, x2, h // 2, fill=color, dash=(4, 2) if state == "RUNNING" else None, width=1)
+
+        for label, x, hw in node_positions:
+            bx1, by1 = x - hw, h // 2 - 12
+            bx2, by2 = x + hw, h // 2 + 12
             self.bc_canvas.create_rectangle(bx1, by1, bx2, by2, outline=color, fill="#000000", width=1)
             self.bc_canvas.create_text(x, h // 2, text=label, fill=color, font=("Consolas", 8, "bold"))
 
@@ -625,10 +657,10 @@ class RetroFaceSearchApp:
         row = tk.Frame(parent, bg=self.C_PANEL)
         row.pack(fill=tk.X, pady=1)
 
-        lbl_k = tk.Label(row, text=label_text, font=("Consolas", 8), fg=self.C_TEXT_MUTED, bg=self.C_PANEL, width=18, anchor="w")
-        lbl_k.pack(side=tk.LEFT)
+        lbl_k = tk.Label(row, text=label_text, font=("Consolas", 8), fg=self.C_TEXT_MUTED, bg=self.C_PANEL, width=22, anchor="w")
+        lbl_k.pack(side=tk.LEFT, anchor="n")
 
-        lbl_v = tk.Label(row, text=default_val, font=("Consolas", 8, "bold"), fg=self.C_TEXT, bg=self.C_PANEL, anchor="w")
+        lbl_v = tk.Label(row, text=default_val, font=("Consolas", 8, "bold"), fg=self.C_TEXT, bg=self.C_PANEL, anchor="w", justify=tk.LEFT, wraplength=450)
         lbl_v.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         return lbl_v
@@ -763,8 +795,7 @@ class RetroFaceSearchApp:
         self.lbl_ind_retrieved.config(text="○ Record retrieved", fg=self.C_TEXT_MUTED)
         self.lbl_ind_match.config(text="○ Fingerprint match", fg=self.C_TEXT_MUTED)
 
-        self.lbl_bc_status.config(text="PROCESSING BLOCKCHAIN PIPELINE...", fg=self.C_ORANGE, bg="#1a1408")
-        self.bc_banner.config(highlightbackground=self.C_BORDER_ORANGE)
+        self._update_bc_banner("⏳ PROCESSING BLOCKCHAIN PIPELINE...", fg=self.C_ORANGE, bg="#181005", border_color=self.C_BORDER_ORANGE)
         self.bc_panel_frame.config(highlightbackground=self.C_BORDER_ORANGE)
         self._draw_blockchain_diagram(state="RUNNING")
 
@@ -843,8 +874,7 @@ class RetroFaceSearchApp:
         self.lbl_app_status.config(text="Execution Error / Failed.", fg=self.C_RED)
 
         self._draw_blockchain_diagram(state="FAILED")
-        self.lbl_bc_status.config(text=f"PIPELINE ERROR: {err_msg[:60]}", fg=self.C_RED, bg="#1a0808")
-        self.bc_banner.config(highlightbackground=self.C_BORDER_RED)
+        self._update_bc_banner(f"✕ PIPELINE ERROR: {err_msg[:60]}", fg="#ff4444", bg="#1a0505", border_color=self.C_BORDER_RED)
         self.bc_panel_frame.config(highlightbackground=self.C_BORDER_RED)
 
         for child in self.results_container.winfo_children():
@@ -874,7 +904,7 @@ class RetroFaceSearchApp:
         # 1. Update Blockchain Verification Panel (3 HONEST STATES)
         # ---------------------------------------------------------------------
         if fingerprint:
-            self.lbl_fingerprint.config(text=f"{fingerprint[:24]}...{fingerprint[-12:]}", fg=self.C_CYAN)
+            self.lbl_fingerprint.config(text=str(fingerprint), fg=self.C_CYAN)
         else:
             self.lbl_fingerprint.config(text="None generated", fg=self.C_TEXT_MUTED)
 
@@ -882,15 +912,14 @@ class RetroFaceSearchApp:
         if verified:
             self.lbl_app_status.config(text="Ready.", fg=self.C_GREEN)
             
-            self.lbl_tx_hash.config(text=f"{tx_hash[:26]}...", fg=self.C_CYAN)
+            self.lbl_tx_hash.config(text=str(tx_hash), fg=self.C_CYAN)
             self.lbl_block_num.config(text="1", fg=self.C_CYAN)
 
             self.lbl_ind_stored.config(text="✓ RECORD STORED", fg=self.C_GREEN)
             self.lbl_ind_retrieved.config(text="✓ RECORD RETRIEVED", fg=self.C_GREEN)
             self.lbl_ind_match.config(text="✓ FINGERPRINT MATCH", fg=self.C_GREEN)
 
-            self.lbl_bc_status.config(text="✓ VERIFICATION SUCCESSFUL", fg="#000000", bg="#00e676")
-            self.bc_banner.config(highlightbackground=self.C_BORDER_GREEN, bg="#00e676")
+            self._update_bc_banner("✓ VERIFICATION SUCCESSFUL — ON-CHAIN RECORD CONFIRMED", fg="#ffffff", bg="#00aa44", border_color="#00e676")
             self.bc_panel_frame.config(highlightbackground=self.C_BORDER_GREEN)
             self._draw_blockchain_diagram(state="SUCCESS", block_num=1)
 
@@ -898,15 +927,14 @@ class RetroFaceSearchApp:
         elif tx_hash:
             self.lbl_app_status.config(text="Complete — Unverified.", fg=self.C_YELLOW)
 
-            self.lbl_tx_hash.config(text=f"{tx_hash[:26]}...", fg=self.C_CYAN)
+            self.lbl_tx_hash.config(text=str(tx_hash), fg=self.C_CYAN)
             self.lbl_block_num.config(text="1", fg=self.C_CYAN)
 
             self.lbl_ind_stored.config(text="✓ RECORD STORED", fg=self.C_GREEN)
             self.lbl_ind_retrieved.config(text="✓ RECORD RETRIEVED", fg=self.C_GREEN)
             self.lbl_ind_match.config(text="✕ FINGERPRINT MISMATCH", fg=self.C_RED)
 
-            self.lbl_bc_status.config(text="✕ VERIFICATION FAILED", fg="#ffffff", bg="#cc0000")
-            self.bc_banner.config(highlightbackground=self.C_BORDER_RED, bg="#cc0000")
+            self._update_bc_banner("✕ VERIFICATION FAILED — FINGERPRINT MISMATCH", fg="#ff4444", bg="#1a0505", border_color=self.C_BORDER_RED)
             self.bc_panel_frame.config(highlightbackground=self.C_BORDER_RED)
             self._draw_blockchain_diagram(state="FAILED")
 
@@ -921,8 +949,7 @@ class RetroFaceSearchApp:
             self.lbl_ind_retrieved.config(text="✕ RECORD RETRIEVED", fg=self.C_RED)
             self.lbl_ind_match.config(text="✕ FINGERPRINT MATCH", fg=self.C_RED)
 
-            self.lbl_bc_status.config(text="✕ GANACHE OFFLINE — FINGERPRINT CREATED LOCALLY", fg="#ffffff", bg="#cc3300")
-            self.bc_banner.config(highlightbackground=self.C_BORDER_RED, bg="#cc3300")
+            self._update_bc_banner("✕ GANACHE OFFLINE — FINGERPRINT STORED LOCALLY", fg=self.C_ORANGE, bg="#180a04", border_color=self.C_BORDER_ORANGE)
             self.bc_panel_frame.config(highlightbackground=self.C_BORDER_RED)
             self._draw_blockchain_diagram(state="OFFLINE")
 
@@ -961,11 +988,28 @@ class RetroFaceSearchApp:
         res_content = tk.Frame(res_canvas, bg=self.C_PANEL)
 
         res_content.bind("<Configure>", lambda e: res_canvas.configure(scrollregion=res_canvas.bbox("all")))
-        res_canvas.create_window((0, 0), window=res_content, anchor="nw")
+        canvas_win = res_canvas.create_window((0, 0), window=res_content, anchor="nw")
         res_canvas.configure(yscrollcommand=res_scrollbar.set)
+
+        def _on_res_canvas_config(event):
+            res_canvas.itemconfig(canvas_win, width=event.width)
+
+        res_canvas.bind("<Configure>", _on_res_canvas_config)
 
         res_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         res_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        def _on_mousewheel(event):
+            res_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        def _bind_mousewheel(event):
+            res_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        def _unbind_mousewheel(event):
+            res_canvas.unbind_all("<MouseWheel>")
+
+        self.results_container.bind("<Enter>", _bind_mousewheel)
+        self.results_container.bind("<Leave>", _unbind_mousewheel)
 
         self.cand_photos_tk.clear()
 
@@ -1033,8 +1077,14 @@ class RetroFaceSearchApp:
             c_details.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
             title_str = cand.get("title") or "Untitled Result"
-            lbl_title = tk.Label(c_details, text=title_str, font=("Consolas", 9, "bold"), fg="#ffffff", bg=bg_c, anchor="w", justify=tk.LEFT, wraplength=340)
+            lbl_title = tk.Label(c_details, text=title_str, font=("Consolas", 9, "bold"), fg="#ffffff", bg=bg_c, anchor="w", justify=tk.LEFT, wraplength=260)
             lbl_title.pack(fill=tk.X, pady=(0, 2))
+
+            def _update_title_wrap(event, label=lbl_title):
+                if event.width > 30:
+                    label.config(wraplength=max(180, event.width - 10))
+
+            c_details.bind("<Configure>", _update_title_wrap)
 
             p_str = f"Platform: {cand.get('platform', 'Web')}"
             tk.Label(c_details, text=p_str, font=("Consolas", 8), fg=self.C_TEXT, bg=bg_c, anchor="w").pack(fill=tk.X)
