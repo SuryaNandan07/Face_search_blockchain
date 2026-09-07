@@ -1,122 +1,150 @@
 <div align="center">
 
-# 🚀 FACESEARCH.EXE
-### **Visual Intelligence Workstation & Immutable Blockchain Verification System**
+```text
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║  ██████╗ ██████╗  ██████╗███████╗███████╗███████╗██████╗  ██████╗██╗  ██╗       ║
+║  ██╔════╝██╔══██╗██╔════╝██╔════╝██╔════╝██╔════╝██╔══██╗██╔════╝██║  ██║       ║
+║  █████╗  ██████╔╝██║     █████╗  ███████╗█████╗  ██████╔╝██║     ███████║       ║
+║  ██╔══╝  ██╔══██╗██║     ██╔══╝  ╚════██║██╔══╝  ██╔══██╗██║     ██╔══██║       ║
+║  ██║     ██║  ██║╚██████╗███████╗███████║███████╗██║  ██║╚██████╗██║  ██║       ║
+║  ╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝       ║
+╠═════════════════════════════════════════════════════════════════════════════════╣
+║  SYSTEM INITIALIZING...                                                         ║
+║  > loading facenet512_biometrics.........................................[ OK ] ║
+║  > connecting serpapi_google_lens........................................[ OK ] ║
+║  > initializing 2d_dct_phash_matrix......................................[ OK ] ║
+║  > establishing web3_evm_ganache_rpc.....................................[ OK ] ║
+║                                                                                 ║
+║  SYSTEM STATUS: ONLINE  |  WORKSTATION READY  |  HH GOA HACKATHON 2026          ║
+╚═════════════════════════════════════════════════════════════════════════════════╝
+```
 
-*Find online image origins, verify facial biometrics, and anchor tamper-proof search records onto the EVM blockchain.*
+> **`> FACESEARCH.EXE --mode=visual-intelligence --verify=on-chain`**
+> 
+> **Visual Intelligence Workstation & Immutable Blockchain Verification System**
+>
+> *Find online image origins, verify facial biometrics, and anchor tamper-proof search records onto the EVM blockchain.*
 
 <br />
 
-[ **🌐 Live Demo** ] · [ **📹 Demo Video** ] · [ **📄 Documentation** ] · [ **📊 Slide Deck** ] · [ **💻 GitHub Repo** ]
+`[ 🌐 LIVE DEMO ]` &nbsp;•&nbsp; `[ 📹 DEMO VIDEO ]` &nbsp;•&nbsp; `[ 📄 DOCUMENTATION ]` &nbsp;•&nbsp; `[ 📊 SLIDE DECK ]` &nbsp;•&nbsp; `[ 💻 GITHUB REPO ]`
 
 <br />
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![DeepFace](https://img.shields.io/badge/AI-FaceNet512-FF69B4?style=for-the-badge&logo=tensorflow&logoColor=white)
-![Google Lens](https://img.shields.io/badge/API-Google%20Lens-4285F4?style=for-the-badge&logo=google&logoColor=white)
-![Web3 EVM](https://img.shields.io/badge/Blockchain-Ganache%20%2F%20EVM-627EEA?style=for-the-badge&logo=ethereum&logoColor=white)
-![Hackathon](https://img.shields.io/badge/HH%20Goa-Hackathon%202026-FF8C00?style=for-the-badge)
+![Python](https://img.shields.io/badge/Language-Python_3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![DeepFace](https://img.shields.io/badge/AI_Core-FaceNet512-FF69B4?style=for-the-badge&logo=tensorflow&logoColor=white)
+![Google Lens](https://img.shields.io/badge/Intelligence-Google_Lens-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![Web3 EVM](https://img.shields.io/badge/Ledger-Ganache_EVM-627EEA?style=for-the-badge&logo=ethereum&logoColor=white)
+![Hackathon](https://img.shields.io/badge/Hackathon-HH_Goa_2026-FF8C00?style=for-the-badge)
 
 </div>
 
 ---
 
-## ⚡ Quick Glance
+## 🟢 SYSTEM STATUS PANEL
 
-<table>
-<tr>
-<td width="25%" align="center">
-<b>🎯 Problem</b><br><br>
-Identity theft, deepfakes, and stolen photos lack cryptographic origin proof.
-</td>
-<td width="25%" align="center">
-<b>💡 Solution</b><br><br>
-Automated reverse lens search + 512-d facial matching + on-chain fingerprinting.
-</td>
-<td width="25%" align="center">
-<b>⚙️ Built With</b><br><br>
-DeepFace, SerpApi, 2D DCT pHash, Web3.py, Ganache, Tkinter GUI.
-</td>
-<td width="25%" align="center">
-<b>🏆 Goal</b><br><br>
-Tamper-proof visual provenance & forensic audit trail for online media.
-</td>
-</tr>
-</table>
+```text
+┌── SYSTEM TELEMETRY ─────────────────────────────────────────────────────────────┐
+│ WORKSTATION STATUS : ONLINE                                                     │
+│ SYSTEM KERNEL      : FACESEARCH.EXE v1.0.0 (HH GOA BUILD)                       │
+│ AI EMBEDDING CORE  : DeepFace / FaceNet512 (512-Dimensional Vector Space)       │
+│ REVERSE SEARCH API : Google Lens via SerpApi (Multi-Platform Social Indexing)   │
+│ PERCEPTUAL HASH    : Custom 2D DCT-II Matrix Algorithm (64-Bit pHash)           │
+│ BLOCKCHAIN LEDGER  : Web3.py / Ganache EVM RPC (Local Node http://127.0.0.1:8545) │
+│ INTERFACE ENGINE   : Retro Cyberpunk Tkinter GUI (Thread-Safe Log Stream)       │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## ⚡ Judge's 60-Second Tour
+## ⚡ JUDGE MODE: 60-SECOND QUICK TOUR
 
-| Time | What to Review | Location / Action | Hackathon Value |
+```text
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║                   ⚡ JUDGE MODE: 60-SECOND FAST EVALUATION                       ║
+╠═════════════════════════════════════════════════════════════════════════════════╣
+║ [00:00 - 00:15]  LAUNCH WORKSTATION  ➔ Run 'python gui.py' to boot retro UI     ║
+║ [00:15 - 00:30]  BIOMETRICS & LENS   ➔ Select image & run DeepFace + Google Lens ║
+║ [00:30 - 00:45]  pHASH & RANKING     ➔ Inspect 2D DCT pHash + cosine face scores║
+║ [00:45 - 01:00]  EVM PROVENANCE      ➔ Verify SHA-256 payload stored in EVM tx  ║
+╚═════════════════════════════════════════════════════════════════════════════════╝
+```
+
+| Frame | Action | Terminal Command / Panel | System Output |
 | :---: | :--- | :--- | :--- |
-| **00–15s** | **Visual Workstation UI** | Launch `python gui.py` | Retro Cyberpunk UI, live terminal log stream, image preview panel. |
-| **15–30s** | **AI Facial Biometrics & Lens** | Select input photo & click Search | DeepFace (FaceNet512 512-d vector) + Google Lens multi-platform discovery. |
-| **30–45s** | **pHash & Multi-Factor Scoring** | Check Top Candidate Card | 2D DCT-II pHash Hamming distance + cosine distance biometrics + RapidFuzz. |
-| **45–60s** | **On-Chain EVM Verification** | View Blockchain Panel | SHA-256 payload stored in EVM `tx["input"]` & verified via Web3.py. |
+| `00:15` | **Boot Terminal** | `python gui.py` | Launches Sci-Fi Cyberpunk visual workstation & live stream terminal. |
+| `00:30` | **Scan Image** | `Input Panel -> Select Image` | Runs 512-d FaceNet biometrics & queries Google Lens across social platforms. |
+| `00:45` | **Multi-Factor Rank** | `Results Panel` | Computes 2D DCT pHash Hamming distance & ranks candidates. |
+| `01:00` | **On-Chain Audit** | `Blockchain Panel` | Writes SHA-256 payload to EVM `tx["input"]` & verifies on-chain data. |
 
 ---
 
-## 🎯 The Problem
+## 🚨 SYSTEM ERROR: CURRENT APPROACH FAILED
 
-<table>
-<tr>
-<td width="33%" align="center">
+```text
+> CRITICAL ALERT: VISUAL IDENTITY PROVENANCE FAILURE DETECTED
 
-### 😣 Today
-
-Once photos are uploaded, cropped, or shared, tracing their original source across social networks requires manual cross-referencing.
-
-</td>
-<td width="33%" align="center">
-
-### ⚠️ The Gap
-
-Standard reverse searches don't confirm facial biometrics, nor do they generate verifiable, timestamped proof of when an image match was identified.
-
-</td>
-<td width="33%" align="center">
-
-### 🎯 Our Solution
-
-An automated pipeline that finds web origins, verifies 512-d face biometrics, and anchors an immutable SHA-256 record onto the EVM blockchain.
-
-</td>
-</tr>
-</table>
+┌── CURRENT SITUATION ──────────────────┐  ┌── THE PROVENANCE GAP ─────────────────┐
+│ Images are copied, cropped, and       │  │ Standard reverse searches fail to     │
+│ shared across social networks         │  │ confirm facial biometrics, and offer  │
+│ without origin tracking.              │  │ zero cryptographic proof of match.     │
+└───────────────────────────────────────┘  └───────────────────────────────────────┘
+                                   │
+                                   ▼
+┌── SYSTEM SOLUTION ───────────────────────────────────────────────────────────────┐
+│ FACESEARCH.EXE automatically executes 512-d face matching, 2D DCT perceptual    │
+│ hashing, and anchors timestamped SHA-256 fingerprints onto EVM transactions.     │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
 
 <br />
 
-> ### 💡 Core Insight
-> **Combining deep neural face embeddings (FaceNet512) with multi-platform Google Lens intelligence and 2D DCT perceptual hashing enables automated identity tracking—while EVM blockchain transactions anchor immutable proof of discovery.**
+```text
+╭── PROTOCOL INSIGHT ─────────────────────────────────────────────────────────────╮
+│                                                                                 │
+│   "Combining deep neural face vectors (FaceNet512) with multi-platform          │
+│    Google Lens search and 2D DCT perceptual hashing enables automated           │
+│    identity discovery—while Web3 EVM block transactions anchor immutable        │
+│    proof of origin without leaking raw biometric vectors on-chain."             │
+│                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────╯
+```
 
 ---
 
-## 🎬 See It In Action
+## 🎬 VISUAL OUTPUT: SEE IT IN ACTION
 
-```
-[ 01 Input & Validation ] ➔ [ 02 Biometrics & Lens ] ➔ [ 03 Scoring & Ranking ] ➔ [ 04 On-Chain Anchor ]
+```text
+[ SCREEN_01: INPUT ] ➔ [ SCREEN_02: PROCESS ] ➔ [ SCREEN_03: RANK ] ➔ [ SCREEN_04: ANCHOR ]
 ```
 
 <table>
 <tr>
 <td width="50%">
 
-### 01 — Input Image & Workstation
-Load any JPG, PNG, or WebP photo into the retro workstation UI (`gui.py`). The system validates dimensions and initializes background services.
+```text
+┌─ [ SCREEN_01 ] WORKSTATION BOOT ───────────────────┐
+│ Load JPG/PNG/WebP into Retro Workstation GUI.     │
+│ Displays image dimensions and system connectivity. │
+└────────────────────────────────────────────────────┘
+```
 
 ```text
-[ Add Screenshot: gui.py Input Panel & Preview Box ]
+[ Add Screenshot: gui.py Input Panel & Image Preview ]
 ```
 
 </td>
 <td width="50%">
 
-### 02 — Biometric & Lens Processing
-DeepFace detects faces and extracts 512-d vectors while SerpApi queries Google Lens across Instagram, TikTok, Reddit, X, and the web.
+```text
+┌─ [ SCREEN_02 ] BIOMETRICS & LENS ──────────────────┐
+│ DeepFace extracts 512-d FaceNet embedding vectors │
+│ while SerpApi queries Google Lens across web nodes. │
+└────────────────────────────────────────────────────┘
+```
 
 ```text
-[ Add Screenshot: gui.py Live Redirector Terminal Stream ]
+[ Add Screenshot: gui.py Live Terminal Stream Log ]
 ```
 
 </td>
@@ -124,18 +152,26 @@ DeepFace detects faces and extracts 512-d vectors while SerpApi queries Google L
 <tr>
 <td width="50%">
 
-### 03 — Multi-Factor Match Ranking
-Candidate thumbnails are fetched and processed via 2D DCT-II pHash and candidate face cropping. The top verified match is selected with confidence meters.
+```text
+┌─ [ SCREEN_03 ] MULTI-FACTOR RANKING ───────────────┐
+│ Downloads candidate thumbnails, computes 2D DCT    │
+│ pHash distance, crops faces, and ranks candidates. │
+└────────────────────────────────────────────────────┘
+```
 
 ```text
-[ Add Screenshot: gui.py Results Panel & Top Candidate Card ]
+[ Add Screenshot: gui.py Top Match Results Card ]
 ```
 
 </td>
 <td width="50%">
 
-### 04 — EVM Blockchain Anchoring
-A deterministic SHA-256 fingerprint hash (`Platform|Title|URL|Category`) is generated and written directly to Ganache EVM transaction payload data.
+```text
+┌─ [ SCREEN_04 ] BLOCKCHAIN ANCHOR ──────────────────┐
+│ Writes deterministic SHA-256 hash to EVM payload   │
+│ data and verifies transaction input on-chain.      │
+└────────────────────────────────────────────────────┘
+```
 
 ```text
 [ Add Screenshot: gui.py Blockchain Verification Panel ]
@@ -147,283 +183,235 @@ A deterministic SHA-256 fingerprint hash (`Platform|Title|URL|Category`) is gene
 
 ---
 
-## ✨ Key Features
+## ✨ MODULE GRID: KEY SYSTEM FEATURES
 
-<table>
-<tr>
-<td width="50%">
-
-### 👤 1. FaceNet512 Biometric Analysis
-* **512-Dimensional Embeddings:** Uses DeepFace with `Facenet512` model and OpenCV detector backend.
-* **Biometric Cosine Matching:** Calculates face similarity scores with calibrated ~0.45 distance thresholds.
-* **Graceful Fallback:** Automatically switches to visual search if no face is present.
-
-</td>
-<td width="50%">
-
-### 🌐 2. Google Lens Intelligence
-* **Multi-Platform Web Discovery:** Queries Google Lens via SerpApi for exact, visual, and organic matches.
-* **Social Domain Categorizer:** Identifies origins across Instagram, TikTok, Reddit, X (Twitter), YouTube, Pinterest, and LinkedIn.
-* **Sanitized Image Retrieval:** Downloads candidate thumbnails with automated error & HTML filtering.
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### 🔬 3. 2D DCT-II Perceptual Hashing
-* **Custom DCT-II Matrix Math:** Calculates 64-bit perceptual hashes (pHash) using low-frequency DCT coefficients.
-* **Hamming Distance Verification:** Quantifies visual image similarity to verify re-shares and crops.
-
-</td>
-<td width="50%">
-
-### 📊 4. Multi-Factor Scoring Engine
-* **Holistic Ranking:** Combines Google Lens rank, pHash Hamming distance, FaceNet biometrics, and RapidFuzz text matching.
-* **Verified Match Prioritization:** Filters out unverified/unavailable links to pick the top verified source.
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### ⛓️ 5. EVM Blockchain Provenance
-* **On-Chain Payload Storage:** Writes deterministic SHA-256 hashes (`Platform|Title|URL|Category`) directly into EVM `tx["input"]`.
-* **On-Chain Audit Verification:** Fetches block receipts and verifies stored transaction data against original hashes via Web3.py.
-* **Offline Handling:** Built-in node status checks for seamless offline fallback.
-
-</td>
-<td width="50%">
-
-### 🖥️ 6. Retro Cyberpunk Workstation GUI
-* **Sci-Fi Terminal Aesthetic:** High-density Tkinter workstation (`gui.py`) with red/cyan styling.
-* **Thread-Safe Log Stream:** Real-time stdout/stderr redirector with carriage return cleanup.
-* **Asynchronous Pipeline:** Background execution queue ensures UI responsiveness.
-
-</td>
-</tr>
-</table>
+```text
+╔═════════════════════════════════════════╦═════════════════════════════════════════╗
+║ MODULE_01: BIOMETRIC ENGINE             ║ MODULE_02: LENS INTELLIGENCE            ║
+╠═════════════════════════════════════════╬═════════════════════════════════════════╣
+║ 👤 DeepFace & FaceNet512 Model          ║ 🌐 Multi-Platform Google Lens           ║
+║ • 512-dimensional vector embedding      ║ • Queries Google Lens via SerpApi       ║
+║ • OpenCV detector & facial alignment    ║ • Indexes IG, TikTok, Reddit, X, Web    ║
+║ • Cosine similarity (~0.45 threshold)   ║ • Candidate thumbnail auto-downloader   ║
+║ • Fallback to general visual search     ║ • Error & HTML content filter           ║
+╠═════════════════════════════════════════╬═════════════════════════════════════════╣
+║ MODULE_03: PERCEPTUAL HASH (pHASH)      ║ MODULE_04: MULTI-FACTOR RANKING         ║
+╠═════════════════════════════════════════╬═════════════════════════════════════════╣
+║ 🔬 2D DCT-II Matrix Algorithm           ║ 📊 Multi-Signal Scoring Engine          ║
+║ • Custom 2D Discrete Cosine Transform   ║ • Combines Lens rank + pHash distance   ║
+║ • 64-bit low-frequency coefficient hash ║ • Integrates FaceNet biometrics         ║
+║ • Hamming distance visual metric        ║ • RapidFuzz title text similarity       ║
+║ • Verifies crops, edits, and re-shares  ║ • Prioritizes verified image links      ║
+╠═════════════════════════════════════════╬═════════════════════════════════════════╣
+║ MODULE_05: BLOCKCHAIN PROVENANCE        ║ MODULE_06: CYBERPUNK WORKSTATION GUI    ║
+╠═════════════════════════════════════════╬═════════════════════════════════════════╣
+║ ⛓️ EVM On-Chain Transaction Logging     ║ 🖥️ Retro Console Interface (gui.py)     ║
+║ • Writes SHA-256 hash to tx["input"]    ║ • Red/Cyan sci-fi terminal styling      ║
+║ • SHA-256 format: Platform|Title|URL    ║ • Thread-safe live log redirector       ║
+║ • Web3.py transaction verification      ║ • Asynchronous queue-driven execution   ║
+║ • Ganache node offline fallback status  ║ • Live status indicators & metrics      ║
+╚═════════════════════════════════════════╩═════════════════════════════════════════╝
+```
 
 ---
 
-## 🧠 System Architecture & Workflow
+## 🧠 SYSTEM ARCHITECTURE
 
 ```mermaid
 flowchart TD
-    A[📷 User Input Image] --> B[🖥️ Retro Workstation UI]
+    A[📷 Input Image] --> B[🖥️ Retro Workstation UI gui.py]
     
-    subgraph AI & Visual Search Processing
+    subgraph AI & Visual Search Processing Layer
         B --> C[👤 DeepFace FaceNet512 Detector]
-        C -->|Face Detected| D[🧬 Extract 512-d Biometric Vector]
-        C -->|No Face| E[🔍 General Visual Search]
+        C -->|Face Detected| D[🧬 512-d Embedding Vector]
+        C -->|No Face| E[🔍 Visual Search Path]
         
         B --> F[🌐 SerpApi Google Lens Client]
-        F --> G[📥 Fetch Social Media Candidates]
+        F --> G[📥 Social Media Candidate Collector]
         
         G --> H[🖼️ 2D DCT-II pHash Calculation]
-        H --> I[📏 Hamming Distance Visual Scoring]
+        H --> I[📏 Hamming Distance Visual Score]
         
-        D --> J[✂️ Candidate Face Crop & Cosine Vector Match]
+        D --> J[✂️ Candidate Face Crop & Cosine Vector Similarity]
     end
     
     subgraph Multi-Factor Scoring & Fingerprinting
         I --> K[📊 Multi-Factor Ranking Engine]
         J --> K
         E --> K
-        K --> L[🏆 Top Verified Match Selection]
-        L --> M[🔐 SHA-256 Fingerprint Generator]
+        K --> L[🏆 Best Verified Candidate Match]
+        L --> M[🔐 SHA-256 Deterministic Fingerprint]
     end
     
-    subgraph Web3 EVM Blockchain Anchoring
+    subgraph Web3 EVM Blockchain Layer
         M --> N[⚡ Web3.py Provider]
-        N -->|Ganache Online| O[⛓️ Send Transaction with Hex Input Payload]
-        O --> P[📜 Block Receipt & Tx Hash]
-        P --> Q[✅ On-Chain Verification]
-        N -->|Ganache Offline| R[⚠️ Offline Mode Status]
+        N -->|Ganache Online| O[⛓️ Send Transaction with Hex Payload]
+        O --> P[📜 Transaction Receipt & Hash]
+        P --> Q[✅ On-Chain Verification verify_record.py]
+        N -->|Ganache Offline| R[⚠️ Offline Mode Handling]
     end
     
-    Q --> S[🖥️ Live GUI & Terminal Output]
+    Q --> S[🖥️ Live Terminal & Results Panel]
     R --> S
 ```
 
 <br />
 
-### Technical Component Mapping
+### COMPONENT MAPPING TABLE
 
-| Layer | Component File | Key Technology | Role & Purpose |
-| :--- | :--- | :--- | :--- |
-| **Desktop Workstation** | [`gui.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/gui.py) | Python Tkinter, Pillow, Threading | Cyberpunk visual UI, live log stream, status bar, results cards. |
-| **Orchestrator** | [`blockchain/main.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/blockchain/main.py) | Python 3.10+, CLI parser | Executes end-to-end pipeline via CLI or secondary desktop GUI. |
-| **AI Biometrics** | [`reverse_search/face_id/face_id.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/reverse_search/face_id/face_id.py) | DeepFace, FaceNet512, OpenCV | Face detection, 512-d vector generation, cosine distance matching. |
-| **Search Engine & pHash** | [`reverse_search/search.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/reverse_search/search.py) | SerpApi, NumPy, RapidFuzz | Google Lens query, 2D DCT pHash, candidate scoring & fingerprinting. |
-| **Blockchain Writer** | [`blockchain/write_record.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/blockchain/write_record.py) | Web3.py, Ganache EVM RPC | Connects to RPC, constructs zero-value transaction with SHA-256 data. |
-| **Blockchain Verifier** | [`blockchain/verify_record.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/blockchain/verify_record.py) | Web3.py | Reads transaction back from EVM block and verifies stored payload. |
-
----
-
-## 🔬 Technical Highlights
-
-<table>
-<tr>
-<td width="50%">
-
-### ⚙️ Signal Processing & pHash
-Uses a dependency-free 2D Discrete Cosine Transform (DCT-II) over standard $32 \times 32$ grayscale matrices to extract top-left $8 \times 8$ low-frequency coefficients, outputting a robust 64-bit perceptual hash for Hamming distance scoring.
-
-</td>
-<td width="50%">
-
-### 🧠 Facial Vector Cosine Similarity
-Biometric scoring measures the normalized dot product of input and candidate 512-d FaceNet vectors:
-$$\text{Sim}(\vec{u}, \vec{v}) = \frac{\vec{u} \cdot \vec{v}}{\|\vec{u}\| \|\vec{v}\|}$$
-Cosine distance is scaled against FaceNet's $0.45$ decision boundary to compute match percentages.
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### 🔐 Cryptographic Provenance
-Fingerprints are created deterministically via SHA-256 over standardized metadata strings: `Platform|Title|URL|Category`, ensuring zero privacy leak of raw biometric vectors on-chain while providing audit proof.
-
-</td>
-<td width="50%">
-
-### ⛓️ EVM Data Field Payload Storage
-Instead of requiring complex smart contract deployments, fingerprints are written directly to transaction `input` bytes (`tx["input"]`) on EVM block transactions, minimizing gas usage while leveraging EVM immutability.
-
-</td>
-</tr>
-</table>
+| Module File | Core Technology | System Role & Functionality |
+| :--- | :--- | :--- |
+| [`gui.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/gui.py) | Tkinter, Pillow, Threading, Queue | Primary Retro Cyberpunk UI, live terminal log redirector, status monitoring. |
+| [`blockchain/main.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/blockchain/main.py) | Python 3.10+, CLI, Tkinter | End-to-end pipeline orchestrator (supports CLI and secondary desktop GUI). |
+| [`reverse_search/face_id/face_id.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/reverse_search/face_id/face_id.py) | DeepFace, FaceNet512, OpenCV | Face detection, 512-d vector extraction, cosine similarity distance. |
+| [`reverse_search/search.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/reverse_search/search.py) | SerpApi, NumPy, RapidFuzz | Google Lens API search, 2D DCT-II pHash, multi-factor candidate scoring. |
+| [`blockchain/write_record.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/blockchain/write_record.py) | Web3.py, Ganache EVM RPC | Connects to RPC, sends 0-value transaction with SHA-256 data in `tx["input"]`. |
+| [`blockchain/verify_record.py`](file:///c:/Users/devab/Documents/Face_search_blockchain/blockchain/verify_record.py) | Web3.py | Reads transaction from EVM block and verifies stored input data against hash. |
 
 ---
 
-## 🛠️ Visual Tech Stack
-
-### AI / ML & Vision
-`Python` `DeepFace` `FaceNet512` `TensorFlow` `tf_keras` `OpenCV` `NumPy` `Pillow`
-
-### Search & Perceptual Hashing
-`SerpApi (Google Lens API)` `2D DCT-II pHash` `ImageHash` `RapidFuzz` `Requests`
-
-### Web3 & Blockchain
-`Web3.py` `Ethereum EVM` `Ganache RPC` `SHA-256 (hashlib)`
-
-### Interface & Runtime
-`Tkinter GUI` `Threading & Queue` `python-dotenv`
-
----
-
-## 🗺️ Roadmap
+## 🔬 TECHNICAL DEEP DIVE
 
 ```text
-✅ Current MVP (Implemented)
-   ├─ DeepFace FaceNet512 512-d facial embedding extraction
-   ├─ Google Lens multi-platform reverse search via SerpApi
-   ├─ 2D DCT-II perceptual hashing & Hamming distance matching
-   ├─ Multi-factor candidate scoring & ranking engine
-   ├─ Web3 EVM transaction logging & on-chain verification (Ganache)
-   └─ Retro Cyberpunk desktop workstation GUI with live log streaming
-      ↓
-🔜 Next Enhancements (Planned)
-   ├─ Multi-face detection per image (tracking multiple subjects)
-   ├─ Public EVM testnet deployment (Sepolia / Polygon) with wallet signing
-   └─ IPFS payload pinning for off-chain report archiving
+> ACCESSING CORE SYSTEM MATHEMATICS...
+```
+
+### 1. 2D Discrete Cosine Transform (DCT-II) pHash
+Custom 2D DCT-II implementation converts $32 \times 32$ grayscale image matrices into frequency space:
+$$B_{k_1, k_2} = \sum_{n_1=0}^{N-1} \sum_{n_2=0}^{N-1} X_{n_1, n_2} \cos\left[\frac{\pi}{N}\left(n_1+\frac{1}{2}\right)k_1\right] \cos\left[\frac{\pi}{N}\left(n_2+\frac{1}{2}\right)k_2\right]$$
+The top-left $8 \times 8$ low-frequency coefficients generate a 64-bit binary hash. Hamming distance between hashes determines visual similarity.
+
+### 2. FaceNet512 Biometric Cosine Metric
+Facial vectors $\vec{u}, \vec{v} \in \mathbb{R}^{512}$ are evaluated via cosine distance:
+$$d_{\text{cosine}}(\vec{u}, \vec{v}) = 1.0 - \frac{\vec{u} \cdot \vec{v}}{\|\vec{u}\|_2 \|\vec{v}\|_2}$$
+Distance is scaled relative to FaceNet's $0.45$ decision threshold to produce a 0-100% biometric confidence score.
+
+### 3. EVM Transaction Data Payload Storage
+Instead of deploying smart contract bytecode, fingerprint hashes are written directly to standard transaction data payload fields:
+```python
+transaction = {
+    "from": account,
+    "to": account,
+    "value": 0,
+    "data": web3.to_bytes(text=fingerprint),  # SHA-256 payload stored on-chain
+    "gas": 100000,
+}
 ```
 
 ---
 
-## 🏆 Why This Project Matters
+## 🛠️ TECHNOLOGY MATRIX
 
-> **Problem:** Stolen images and catfishing spread rapidly without clear origin proof or biometric validation.
->
-> **Solution:** FACESEARCH.EXE unifies facial biometrics, Google Lens visual search, 2D DCT perceptual hashing, and EVM blockchain transaction logging into a single operational workstation.
->
-> **Impact:** Provides content creators, forensic analysts, and everyday users with instant visual discovery and verifiable, tamper-proof on-chain proof of image matches.
+```text
+┌─────────────────┬──────────────────────────────────────────────────────────────┐
+│ LAYER           │ IMPLEMENTED TECHNOLOGIES                                     │
+├─────────────────┼──────────────────────────────────────────────────────────────┤
+│ LANGUAGE        │ Python 3.10+                                                 │
+│ AI / BIOMETRICS │ DeepFace (v0.0.100), FaceNet512, TensorFlow, OpenCV, NumPy   │
+│ SEARCH API      │ SerpApi (Google Lens Engine), Requests                       │
+│ SIGNAL / MATH   │ Custom 2D DCT-II pHash, ImageHash, RapidFuzz                 │
+│ BLOCKCHAIN      │ Web3.py (v8.0.0), Ganache EVM RPC, SHA-256 (hashlib)          │
+│ WORKSTATION UI  │ Tkinter, Pillow, Threading, Queue, python-dotenv             │
+└─────────────────┴──────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 👥 Team
+## 📈 SYSTEM IMPACT & ROADMAP
 
-<table>
-<tr>
-<td align="center" width="50%">
+```text
+v1.0  ██████████████████████████████████  CURRENT MVP (HH GOA IMPLEMENTED)
+      ├─ DeepFace FaceNet512 512-d facial embedding extraction
+      ├─ SerpApi Google Lens multi-platform discovery
+      ├─ Custom 2D DCT-II perceptual hashing & Hamming distance
+      ├─ Multi-factor candidate scoring engine
+      ├─ Web3 EVM transaction logging & on-chain verification
+      └─ Retro Cyberpunk visual workstation GUI (gui.py)
+      │
+      ▼
+v1.1  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  FUTURE ENHANCEMENTS (PLANNED)
+      ├─ Multi-face detection per image frame
+      ├─ Public EVM testnet deployment (Sepolia / Polygon) with wallet signing
+      └─ IPFS report payload archiving
+```
 
-### 👤 Surya Nandan
-**Core Developer & AI / Web3 Engineer**
-*Implemented FaceNet512 biometrics, Google Lens search pipeline, pHash matrix engine, Web3 EVM verification, and Tkinter retro workstation.*
+---
 
-</td>
-<td align="center" width="50%">
+## 🏆 SYSTEM CREDITS & TEAM
 
-### 👤 Team Member
-**Contributor / Hackathon Teammate**
-*`[Add Role / Contribution]`*
-
-</td>
-</tr>
-</table>
+```text
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║                                 SYSTEM CREDITS                                  ║
+╠═════════════════════════════════╦═══════════════════════════════════════════════╣
+║ MEMBER                          ║ ROLE & SYSTEM CONTRIBUTION                    ║
+╠═════════════════════════════════╬═══════════════════════════════════════════════╣
+║ Surya Nandan                    ║ Core AI, Web3 & Workstation Developer         ║
+║                                 ║ (Implemented FaceNet, Lens, pHash & GUI)      ║
+╠═════════════════════════════════╬═══════════════════════════════════════════════╣
+║ Team Member                     ║ Contributor / Hackathon Teammate              ║
+║                                 ║ [Add Role / Contribution]                     ║
+╚═════════════════════════════════╩═══════════════════════════════════════════════╝
+```
 
 ---
 
 <details>
-<summary><b>🔧 Developer Guide & Running the Application (Click to expand)</b></summary>
+<summary><b>🔧 SYSTEM INSTALLATION & BOOTSTRAP COMMANDS (Click to expand)</b></summary>
 
 <br />
 
-### 1. Prerequisites
-* **Python 3.10+**
-* *(Optional)* **Ganache** local RPC running at `http://127.0.0.1:8545`
-
-### 2. Installation
+### 1. Repository Clone
 ```bash
-# Clone the repository
-git clone https://github.com/SuryaNandan07/Face_search_blockchain.git
-cd Face_search_blockchain
-
-# Create virtual environment
-python -m venv .venv
-# Windows: .\.venv\Scripts\Activate.ps1 | Linux/macOS: source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
+$ git clone https://github.com/SuryaNandan07/Face_search_blockchain.git
+$ cd Face_search_blockchain
 ```
 
-### 3. Environment Variables (`.env`)
-Create a `.env` file in the root folder:
+### 2. Environment Setup
+```bash
+$ python -m venv .venv
+# Windows PowerShell:
+$ .\.venv\Scripts\Activate.ps1
+# Linux / macOS:
+$ source .venv/bin/activate
+
+$ pip install -r requirements.txt
+```
+
+### 3. Environment Configuration (`.env`)
+Create `.env` file in project root:
 ```env
 SERPAPI_KEY=your_serpapi_key_here
 RPC_URL=http://127.0.0.1:8545
 ```
 
-### 4. Running the Application
+### 4. Executing Workstation
 * **Primary Retro Cyberpunk GUI:**
   ```bash
-  python gui.py
+  $ python gui.py
   ```
 * **Secondary Desktop GUI:**
   ```bash
-  python blockchain/main.py
+  $ python blockchain/main.py
   ```
 * **CLI Execution Mode:**
   ```bash
-  python blockchain/main.py path/to/image.jpg
+  $ python blockchain/main.py path/to/image.jpg
   ```
 
-### 5. Detailed Project Structure
+### 5. File Directory Structure
 ```text
 Face_search_blockchain/
-├── .env                    # Environment variables (SERPAPI_KEY, RPC_URL)
-├── gui.py                  # Primary Retro Cyberpunk Visual Workstation UI
+├── .env                    # System environment config (SERPAPI_KEY, RPC_URL)
+├── gui.py                  # Primary Retro Cyberpunk Visual Workstation GUI
 ├── requirements.txt        # Package dependencies
-├── README.md               # Visual product documentation
+├── README.md               # Visual terminal documentation
 ├── blockchain/
 │   ├── main.py             # Pipeline orchestrator (CLI & secondary GUI)
-│   ├── write_record.py     # Web3 EVM transaction writer
-│   └── verify_record.py    # Web3 EVM transaction verifier
+│   ├── write_record.py     # Web3 EVM transaction writer module
+│   └── verify_record.py    # Web3 EVM transaction verification module
 └── reverse_search/
     ├── compare_images.py   # Perceptual hash candidate helper
-    ├── search.py           # Google Lens, 2D DCT pHash & multi-factor scoring
+    ├── search.py           # Google Lens, 2D DCT pHash & scoring engine
     └── face_id/
         └── face_id.py      # DeepFace FaceNet512 detection & cosine matching
 ```
@@ -434,8 +422,12 @@ Face_search_blockchain/
 
 <div align="center">
 
-### **Built to solve real-world visual identity misuse. Designed to scale beyond the hackathon.**
+```text
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║  BUILT TO SOLVE REAL-WORLD VISUAL MISUSE. DESIGNED TO SCALE BEYOND HACKATHONS.  ║
+╚═════════════════════════════════════════════════════════════════════════════════╝
+```
 
-[ **Live Demo** ] · [ **Demo Video** ] · [ **Documentation** ] · [ **Slide Deck** ] · [ **GitHub Repo** ]
+`[ LIVE DEMO ]` &nbsp;•&nbsp; `[ DEMO VIDEO ]` &nbsp;•&nbsp; `[ DOCUMENTATION ]` &nbsp;•&nbsp; `[ SLIDE DECK ]` &nbsp;•&nbsp; `[ GITHUB REPO ]`
 
 </div>
